@@ -298,7 +298,7 @@ primitive(int primitiveNumber, struct object *args, int *failed)
 			/* get length of file */
 		fseek(fp, 0, 2);
 		j = (int) ftell(fp);
-		stringReturn = gcialloc(j);
+		stringReturn = (struct byteObject *)gcialloc(j);
 		returnedValue = (struct object *)stringReturn;
 		returnedValue->class = args->data[0]->class;
 			/* reset to beginning, and read values */
