@@ -13,7 +13,7 @@
 	or using a define statement.  Either one will work (check this?)
 */
 
-typedef short object;
+typedef int object;
 
 /*
 	The memory module itself is defined by over a dozen routines.

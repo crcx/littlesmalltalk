@@ -38,7 +38,10 @@ extern double frexp(), ldexp();
 extern long time();
 extern object ioPrimitive(INT X OBJP);
 extern object sysPrimitive(INT X OBJP);
-
+extern void byteAtPut(OBJ X INT X INT);
+extern void setInstanceVariables(OBJ);
+extern boolean parse(OBJ X char* X boolean);
+extern void flushCache(OBJ X OBJ);
 
 static object zeroaryPrims(number)
 int number;
