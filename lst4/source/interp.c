@@ -1084,11 +1084,12 @@ checkCache:
 
 	    case 38:	/* replaceFrom:... */
 		returnedValue = stack->data[--stackTop];
+                stackTop -= 4;
 	    	if (bulkReplace(returnedValue,
-			stack->data[--stackTop],
-			stack->data[--stackTop],
-			stack->data[--stackTop],
-			stack->data[--stackTop])) {
+			stack->data[stackTop + 4],
+			stack->data[stackTop + 3],
+			stack->data[stackTop + 2],
+			stack->data[stackTop + 1])) {
 		    goto failPrimitive;
 		}
 		break;
