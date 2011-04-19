@@ -1,0 +1,2 @@
+#! /bin/sh
+./st -n bootstrap

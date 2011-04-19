@@ -1,0 +1,1449 @@
+.so macros
+.nh
+.ds CF
+.ds CH
+.ps +0.2i
+.nr PO +0.2i
+.Nm Object
+.PP
+The class \fBObject\fP is a superclass of all classes in the system, and is
+used to provide a consistent basic functionality and default behavior.
+Many methods in class \fBObject\fP are overridden in subclasses.
+.SH
+Responds to
+.Rs ==
+Return true if receiver and argument are the
+same object, false otherwise.
+.Rs ~~
+Inverse of ==.
+.Rs asString
+Return a string representation of the receiver, 
+by default this is the same as \fIprintString\fP, although one or the
+other is redefined in many subclasses.
+.Rs asSymbol
+Return a symbol representing the receiver.
+.Rs class
+Return object representing the class of the receiver.
+.Rs copy
+Return shallowCopy of receiver.
+Many subclasses redefine shallowCopy.
+.Rs deepCopy
+Return the receiver.  This method is redefined in many sub\%classes.
+.Rs do: d
+The argument must be a one argument block.
+Execute the block on every element of the receiver collection.
+Elements in the receiver collection are listed using \fIfirst\fP and \fInext\fP
+(below), so the default behavior is merely to execute the block using the
+receiver as argument.
+.Rs error:
+Argument must be a String.  Print argument string as error message.
+Return \fBnil\fP.
+.Rs first n
+Return first item in sequence, which is by default simply the receiver.
+See \fInext\fP, below.
+.Rs isKindOf:
+Argument must be a \fBClass\fP.  Return true if class of receiver, or any
+superclass thereof, is the same as argument.
+.Rs isMemberOf:
+Argument must be a \fBClass\fP.  Return true if receiver is instance of
+argument class.
+.Rs isNil
+Test whether receiver is object \fBnil\fP.
+.Rs next n
+Return next item in sequence, which is by default \fBnil\fP.  This message is
+redefined in classes which represent sequences, such as \fBArray\fP 
+or \fBDictionary\fP.
+.Rs notNil
+Test if receiver is not object \fBnil\fP.
+.Rs print
+Display print image of receiver on the standard output.
+.Rs printString
+Return a string representation of receiver.
+Objects which do not redefine printString, and which therefore do not have
+a printable representation, return their class name as a string.
+.Rs respondsTo:
+Argument must be a symbol.  Return true if receiver will respond to 
+the indicated message.
+.Rs shallowCopy
+Return the receiver.  This method is redefined in many sub\%classes.
+.Ex
+7 ~~ 7.0	True
+7 asSymbol	#7
+7 class	Integer
+7 copy	7
+7 isKindOf: Number	True
+7 isMemberOf: Number	False
+7 isNil	False
+7 respondsTo: #+	True
+.Nm Object UndefinedObject
+.PP
+The pseudo variable \fBnil\fP is an instance (usually the only instance) of the
+class \fBUndefinedObject\fP.  \fBnil\fP is used to represent undefined values, 
+and is
+also typically returned in error situations.  \fBnil\fP is also used as a terminator
+in sequences, as for example in response to the message \fInext\fP when there are
+no further elements in a sequence.
+.SH
+Responds to
+.Rs isNil r
+Overrides method found in Object.  Return true.
+.Rs notNil r
+Overrides method found in Object.  Return false.
+.Rs printString r
+Return 'nil'.
+.Ex
+nil isNil	True
+.Nm Object Symbol
+.PP
+Instances of the class \fBSymbol\fP are created either by their literal 
+representation, which is a pound sign followed by a string of nonspace 
+characters (for example #aSymbol ),
+or by the message \fIasSymbol\fP being passed to an object.
+Symbols cannot be created using \fInew\fP.  Symbols are guaranteed to have
+unique representations; that is, two symbols representing the same
+characters will always test equal to each other.  Inside of literal
+arrays, the leading pound signs on symbols can be eliminated, for example:
+#(these are symbols).
+.SH
+Responds to
+.Rs == r
+Return true if the two symbols represent the same characters,
+false otherwise.
+.Rs asString r
+Return a String representation of the symbol without the leading pound
+sign.
+.Rs printString r
+Return a String representation of the symbol, including the leading pound
+sign.
+.Ex
+#abc == #abc	True
+#abc == #ABC	False
+#abc ~~ #ABC	True
+#abc printString	#abc
+\&'abc' asSymbol	#abc
+.Nm Object Boolean
+.PP
+The class \fBBoolean\fP provides protocol for manipulating true and false values.
+The pseudo variables \fBtrue\fP and \fBfalse\fP are instances of the subclasses of
+\fBBoolean\fP; \fBTrue\fP and \fBFalse\fP, respectively.
+The subclasses \fBTrue\fP and \fBFalse\fP, in combination with blocks, are used to
+implement conditional control structures.  Note, however, that the
+bytecodes may optimize conditional tests by generating
+code in-line, rather than using message passing.
+Note that bit-wise boolean operations are provided by class \fBInteger\fP.
+.SH
+Responds To
+.Rs &
+The argument must be a boolean.  Return the logical conjunction (and)
+of the two values.
+.Rs |
+The argument must be a boolean.  Return the logical disjunction (or)
+of the two values.
+.Rs and:
+The argument must be a block.  Return the logical conjunction (and)
+of the two values.  If the receiver is false the second argument is not
+used, otherwise the result is the value yielded in evaluating the argument
+block.
+.Rs or:
+The argument must be a block.  Return the logical disjunction (or)
+of the two values.  If the receiver is true the second argument is not
+used, otherwise the result is the value yielded in evaluating the argument
+block.
+.Rs eqv:
+The argument must be a boolean.  Return the logical equivalence (eqv)
+of the two values.
+.Rs xor:
+The argument must be a boolean.  Return the logical exclusive or (xor)
+of the two values.
+.Ex
+(1 > 3) & (2 < 4)	False
+(1 > 3) | (2 < 4)	True
+(1 > 3) and: [2 < 4]	False
+.Nm Object Boolean True
+.PP
+The pseudo variable \fBtrue\fP is an instance (usually the only instance) of
+the class \fBTrue\fP.
+.SH
+Responds To
+.Rs ifTrue:
+Return the result of evaluating the argument block.
+.Rs ifFalse:
+Return \fBnil\fP.
+.Rs ifTrue:ifFalse:
+Return the result of evaluating the first argument block.
+.Rs ifFalse:ifTrue:
+Return the result of evaluating the second argument block.
+.Rs not
+Return \fBfalse\fP.
+.Ex
+(3 < 5) not	False
+(3 < 5) ifTrue: [17]	17
+.Nm Object Boolean False
+.PP
+The pseudo variable \fBfalse\fP is an instance (usually the only instance) of
+the class \fBFalse\fP.
+.Rs ifTrue:
+Return \fBnil\fP.
+.Rs ifFalse:
+Return the result of evaluating the argument block.
+.Rs ifTrue:ifFalse:
+Return the result of evaluating the second argument block.
+.Rs ifFalse:ifTrue:
+Return the result of evaluating the first argument block.
+.Rs not
+Return \fBtrue\fP.
+.Ex
+(1 < 3) ifTrue: [17]	17
+(1 < 3) ifFalse: [17]	nil
+.Nm Object Magnitude
+.PP
+The class \fBMagnitude\fP provides protocol for those subclasses possessing
+a linear ordering.  For the sake of efficiency, most subclasses redefine
+some or all of the relational messages.  All methods are defined in
+terms of the basic messages <, = and >, which are in turn defined
+circularly in terms of each other.  Thus each subclass of \fBMagnitude\fP
+must redefine at least one of these messages.
+.Rs <
+Relational less than test.  Returns a boolean.
+.Rs <=
+Relational less than or equal test.
+.Rs =
+Relational equal test.  Note that this differs from ==, which is
+an object equality test.
+.Rs ~= 
+Relational not equal test, opposite of =.
+.Rs >=
+Relational greater than or equal test.
+.Rs >
+Relational greater than test.
+.Rs between:and:
+Relational test for inclusion.
+.Rs max:
+Return the maximum of the receiver and argument value.
+.Rs min:
+Return the minimum of the receiver and argument value.
+.Ex
+$A max: $a	$a
+4 between: 3.1 and: (17/3)	True
+.Nm Object Magnitude Char
+.PP
+This class defines protocol for objects with character values.
+Characters possess an ordering given by the underlying representation,
+however arithmetic is not defined for character values.
+Characters are written literally by preceding the character desired with
+a dollar sign, for example: $a \0 $B \0 $$.
+.SH
+Responds to
+.Rs == r
+Object equality test.  Two instances of the same character always test equal.
+.Rs asciiValue
+Return an \fBInteger\fP representing the ascii value of the receiver.
+.Rs asLowercase
+If the receiver is an uppercase letter returns the same letter in lowercase,
+otherwise returns the receiver.
+.Rs asUppercase
+If the receiver is a lowercase letter returns the same letter in uppercase,
+otherwise returns the receiver.
+.Rs asString r
+Return a length one string containing the receiver.
+Does not contain leading dollar sign, compare to \fIprintString\fP.
+.Rs digitValue
+If the receiver represents a number (for example $9) return the digit value
+of the number.  If the receiver is an uppercase letter (for example $B) return
+the position of the number in the uppercase letters + 10, ($B returns 11, for
+example).  If the receiver is neither a digit nor an uppercase letter an
+error is given and \fBnil\fP returned.
+.Rs isAlphaNumeric
+Respond true if receiver is either digit or letter, false otherwise.
+.Rs isDigit
+Respond true if receiver is a digit, false otherwise.
+.Rs isLetter
+Respond true if receiver is a letter, false otherwise.
+.Rs isLowercase
+Respond true if receiver is a lowercase letter, false otherwise.
+.Rs isSeparator
+Respond true if receiver is a space, tab or newline, false otherwise.
+.Rs isUppercase
+Respond true if receiver is an uppercase letter, false otherwise.
+.Rs isVowel
+Respond true if receiver is $a, $e, $i, $o or $u, in either
+upper or lower case.
+.Rs printString r	
+Respond with a string representation of the character value.
+Includes leading dollar sign, compare to \fIasString\fP, which does not include $.
+.Ex
+$A < $0	False
+$A asciiValue	65
+$A asString	A
+$A printString	$A
+$A isVowel	True
+$A digitValue	10
+.Nm Object Magnitude Number
+.PP
+The class \fBNumber\fP is an abstract superclass for \fBInteger\fP and \fBFloat\fP.
+Instances of \fBNumber\fP cannot be created directly.                 
+Relational messages and many arithmetic messages are redefined in each
+subclass for arguments of the appropriate type.  In general, an error message
+is given and \fBnil\fP returned for illegal arguments.
+.SH
+Responds To
+.Rs +
+Mixed type addition.
+.Rs \(mi
+Mixed type subtraction.
+.Rs *
+Mixed type multiplication
+.Rs /
+Mixed type division.
+.Rs \(ua n
+Exponentiation, same as raisedTo: .
+.Rs @
+Construct a point with coordinates being the receiver and the argument.
+.Rs abs
+Absolute value of the receiver.
+.Rs exp
+e raised to the power.
+.Rs gamma n
+Return the gamma function (generalized factorial) evaluated at the
+receiver.
+.Rs ln
+Natural logarithm of the receiver.
+.Rs log:
+Logarithm in the given base.
+.Rs negated
+The arithmetic inverse of the receiver.
+.Rs negative
+True if the receiver is negative.
+.Rs pi n
+Return the approximate value of the receiver multiplied by \*(p (3.1415926...).
+.Rs positive
+True if the receiver is positive.
+.Rs radians n
+Argument converted into radians.
+.Rs raisedTo:
+The receiver raised to the argument value.
+.Rs reciprocal
+The arithmetic reciprocal of the receiver.
+.Rs roundTo:
+The receiver rounded to units of the argument.
+.Rs sign
+Return \(mi1, 0 or 1 depending upon whether the receiver is negative, zero or
+positive.
+.Rs sqrt
+Square root.  nil if receiver is less than zero.
+.Rs squared
+Return the receiver multiplied by itself.
+.Rs strictlyPositive
+True if the receiver is greater than zero.
+.Rs to:
+Interval from receiver to argument value with step of 1.
+.Rs to:by:
+Interval from receiver to argument in given steps.
+.Rs truncatedTo:
+The receiver truncated to units of the argument.
+.Ex
+3 < 4.1	True
+3 + 4.1	7.1
+3.14159 exp	23.1406
+9 gamma	40320
+5 reciprocal	0.2
+0.5 radians	0.5 radians
+13 roundTo: 5	15
+13 truncateTo: 5	10
+.Nm Object Magnitude Number Integer
+.PP
+The class \fBInteger\fP provides protocol for objects with integer values.
+.SH
+Responds To
+.Rs == r
+Object equality test.  Two integers representing the same value are
+considered to be the same object.
+.Rs //
+Integer quotient, truncated towards negative infinity (compare to \fIquo:\fP).
+.Rs \e\e
+Integer remainder, truncated towards negative infinity (compare to \fIrem:\fP).
+.Rs allMask:
+Argument must be \fBInteger\fP.  Treating receiver and argument as bit strings,
+return \fBtrue\fP if all bits with 1 value in argument correspond to bits with 1
+values in the receiver.
+.Rs anyMask:
+Argument must be \fBInteger\fP.  Treating receiver and argument as bit strings,
+return true if any bit with 1 value in argument corresponds to a bit with
+1 value in the receiver.
+.Rs asCharacter
+Return the Char with the same underlying ascii representation as the low
+order eight bits of the receiver.
+.Rs asFloat
+Floating point value with same magnitude as receiver.
+.Rs bitAnd:
+Argument must be \fBInteger\fP.  Treating the receiver and argument as bit strings,
+return logical \fBand\fP of values.
+.Rs bitAt:
+Argument must be \fBInteger\fP greater than 0 and less than underlying word size.
+Treating receiver as a bit string, return the bit value at the given position,
+numbering from low order (or rightmost) position.
+.Rs bitInvert
+Return the receiver with all bit positions inverted.
+.Rs bitOr:
+Return logical \fBor\fP of values.
+.Rs bitShift:
+Treating the receiver as a bit string, shift bit values by amount indicated
+in argument.  Negative values shift right, positive left.
+.Rs bitXor:
+Return logical \fBexclusive-or\fP of values.
+.Rs even
+Return true if receiver is even, false otherwise.
+.Rs factorial
+Return the factorial of the receiver.  Return as Float for large numbers.
+.Rs gcd:
+Argument must be \fBInteger\fP.  Return the greatest common divisor of the
+receiver and argument.
+.Rs highBit
+Return the location of the highest 1 bit in the receiver.
+Return \fBnil\fP for receiver zero.
+.Rs lcm:
+Argument must be \fBInteger\fP.  Return least common multiple of receiver and
+argument.
+.Rs noMask:
+Argument must be \fBInteger\fP.  Treating receiver and argument as bit strings,
+return true if no 1 bit in the argument corresponds to a 1 bit in the receiver.
+.Rs odd
+Return true if receiver is odd, false otherwise.
+.Rs quo:
+Return quotient of receiver divided by argument.
+.Rs radix:
+Return a string representation of the receiver value, printed in the base
+represented by the argument.  Argument value must be less than 36.
+.Rs rem:
+Remainder after receiver is divided by argument value.
+.Rs timesRepeat:
+Repeat argument block the number of times given by the receiver.
+.Ex
+5 + 4	7
+5 allMask: 4	True
+4 allMask: 5	False
+5 anyMask: 4	True
+5 bitAnd: 3	1
+5 bitOr: 3	7
+5 bitInvert	\(mi6
+254 radix: 16	16rFE
+\(mi5 // 4	\(mi2
+\(mi5 quo: 4	\(mi1
+\(mi5 \e\e 4	1
+\(mi5 rem: 4	\(mi1
+8 factorial	40320
+.Nm Object Magnitude Number Float
+.PP
+The class \fBFloat\fP provides protocol for objects with floating point values.
+.SH
+Responds To
+.Rs == r
+Object equality test.  Return true if the receiver and argument
+represent the same floating point value.
+.Rs \(ua n
+Floating exponentiation.
+.Rs arcCos
+Return a \fBRadian\fP representing the arcCos of the receiver.
+.Rs arcSin
+Return a \fBRadian\fP representing the arcSin of the receiver.
+.Rs arcTan
+Return a \fBRadian\fP representing the arcTan of the receiver.
+.Rs  asFloat
+Return the receiver.
+.Rs ceiling
+Return the Integer ceiling of the receiver.
+.Rs coerce:
+Coerce the argument into being type Float.
+.Rs exp
+Return e raised to the receiver value.
+.Rs floor
+Return the Integer floor of the receiver.
+.Rs fractionPart
+Return the fractional part of the receiver.
+.Rs gamma n
+Return the value of the gamma function applied to the receiver value.
+.Rs integerPart
+Return the integer part of the receiver.
+.Rs ln
+Return the natural log of the receiver.
+.Rs radix:
+Return a string containing the printable representation of the receiver
+in the given radix.  Argument must be an Integer less than 36.
+.Rs rounded
+Return the receiver rounded to the nearest integer.
+.Rs sqrt
+Return the square root of the receiver.
+.Rs truncated
+Return the receiver truncated to the nearest integer.
+.Ex
+4.2 * 3	12.6
+2.1 \(ua 4	19.4481
+2.1 raisedTo: 4	19.4481
+0.5 arcSin	0.523599 radians
+2.1 reciprocal	0.47619
+4.3 sqrt	2.07364
+.Nm Object Magnitude Radian
+.PP
+The class \fBRadian\fP is used to represent radians.  Radians are a unit of
+measurement, independent of other numbers.  
+Only radians will responds to the trigonometric functions 
+such as \fIsin\fP and \fIcos\fP.
+Numbers can be converted into
+radians by passing them the message \fIradians\fP.  Similarly, radians
+can be converted into numbers by sending them the message \fIasFloat\fP.
+Notice that only a limited range of arithmetic operations are permitted on
+Radians.
+Radians are normalized to be between 0 and 2\(*p.
+.SH
+Responds to
+.Rs +
+Argument must be a Radian.  Add the two radians together and return the
+normalized result.
+.Rs \(mi
+Argument must be a Radian.  Subtract the argument from the receiver and
+return the normalized result.
+.Rs *
+Argument must be a Number.  Multiply the receiver by the argument amount
+and return the normalized result.
+.Rs /
+Argument must be a Number.  Divide the receiver by the argument amount
+and return the normalized result.
+.Rs asFloat
+Return the receiver as a floating point number.
+.Rs cos
+Return a floating point number representing the cosine of the
+receiver.
+.Rs sin
+Return a floating point number representing the sine of the receiver.
+.Rs tan
+Return a floating point number representing the tangent of the receiver.
+.Ex
+0.5236 radians sin	0.5
+0.5236 radians cos	0.866025
+0.5236 radians tan	0.577352
+0.5 arcSin asFloat	0.523599
+.Nm Object Magnitude Point
+.PP
+\fBPoint\fPs are used to represent pairs of quantities, such as coordinate
+pairs.
+.SH
+Responds To
+.Rs <
+True if both values of the receiver are less than the corresponding values
+in the argument.
+.Rs <=
+True if the first value is less than or equal to the corresponding value in
+the argument, and the second value is less than the corresponding value in
+the argument.
+.Rs >=
+True if both values of the receiver are greater than or equal to the
+corresponding values in the argument.
+.Rs *
+Return a new point with coordinates multiplied by the argument value.
+.Rs /
+Return a new point with coordinates divided by the argument value.
+.Rs //
+Return a new point with coordinates divided by the argument value.
+.Rs +
+Return a new point with coordinates offset by the corresponding values in
+the argument.
+.Rs abs
+Return a new point with coordinates having the absolute value of the
+receiver.
+.Rs dist:
+Return the Euclidean distance between the receiver and the argument
+point.
+.Rs max:
+The argument must be a \fBPoint\fP.
+Return the lower right corner of the rectangle defined by the receiver and
+the argument.
+.Rs min:
+The argument must be a \fBPoint\fP.
+Return the upper left corner of the rectangle defined by the receiver and
+the argument.
+.Rs transpose
+Return a new point with coordinates being the transpose of the receiver.
+.Rs x
+Return the first coordinate of the receiver.
+.Rs x:
+Set the first coordinate of the receiver.
+.Rs x:y:
+Sets both coordinates of the receiver.
+.Rs y
+Return the second coordinate of the receiver.
+.Rs y:
+Set the second coordinate of the receiver.
+.Ex
+(10@12) < (11@14)	True
+(10@12) < (11@11)	False
+(10@12) max: (11@11)	11@12
+(10@12) min: (11@11)	10@11
+(10@12) dist: (11@14)	2.23607
+(10@12) transpose	12@10
+.Nm Object Random
+.PP
+The class \fBRandom\fP provides protocol for random number generation.  Sending
+the message \fInext\fP to an instance of \fBRandom\fP results in a \fBFloat\fP
+between 0.0 and 1.0, randomly distributed.
+By default, the pseudo random sequence is the same for each object in class
+\fBRandom\fP.  This can be altered using the message \fIrandomize\fP.
+.SH
+Responds To
+.Rs between:and: n
+Return a random number uniformly distributed between the two arguments.
+.Rs first n
+Return a random number between 0.0 and 1.0.
+This message merely provides consistency with protocol for other sequences,
+such as Arrays or Intervals.
+.Rs next
+Return a random number between 0.0 and 1.0.
+.Rs next: d
+Return an \fBArray\fP containing the next n random numbers, where n
+is the argument value.
+.Rs randInteger: n
+The argument must be an integer.  Return a random integer between 1 and the
+value given.
+.Rs randomize n
+Change the pseudo-random number generator seed by a time dependent value.
+.Ex
+i \(<- Random new
+i next	0.759
+i next	0.157
+i next: 3	#( 0.408 0.278 0.547 )
+i randInteger: 12	5
+i between: 4 and: 17.5	10.0
+.Nm Object Collection
+.PP
+The class \fBCollection\fP provides protocol for groups of objects, such as
+\fBArray\fPs or \fBSet\fPs.  
+The different forms of collections are distinguished by several
+characteristics, among them whether the size of the collection is fixed
+or unbounded, the presence or absence of an ordering, and their insertion
+or access method.  For example, an \fBArray\fP is a collection with a
+fixed size and ordering, indexed by integer keys.  A \fBDictionary\fP, on the
+other hand, has no fixed size or ordering, and can be indexed by
+arbitrary elements.  Nevertheless, \fBArrays\fP and \fBDictionarys\fP share many
+features in common, such as their access method (\fIat:\fP and \fPat:put:\fP),
+and the ability to respond to \fIcollect:\fP, \fIselect:\fP, and many other
+messages.
+.PP
+The table below lists some of the characteristics of several forms of
+collections:
+.TS
+center box;
+l c c c c c.
+
+Name	Creation	Size	Ordered?	Insertion	Access
+	Method	fixed?		method	method
+
+_
+
+Bag/Set	new	no	no	add:	includes:
+
+Dictionary	new	no	no	at:put:	at:
+
+Interval	n to: m	yes	yes	none	at:
+
+List	new	no	yes	addFirst:	first
+				addLast:	last
+
+Array	new:	yes	yes	at:put:	at:
+
+String	new:	yes	yes	at:put:	at:
+
+.TE
+.PP
+The list below shows messages that are shared in common by all collections.
+.SH
+Responds to
+.Rs addAll:
+The argument must be a \fBCollection\fP.
+Add all the elements of the argument collection to the receiver collection.
+.Rs asArray
+Return a new collection of type \fBArray\fP containing the elements from
+the receiver collection.  If the receiver was ordered, the elements will
+be in the same order in the new collection, otherwise the elements will
+be in an arbitrary order.
+.Rs asBag
+Return a new collection of type \fBBag\fP containing the elements from
+the receiver collection.
+.Rs asList n
+Return a new collection of type \fBList\fP containing the elements from
+the receiver collection.  If the receiver was ordered, the elements will
+be in the same order in the new collection, otherwise the elements will
+be in an arbitrary order.
+.Rs asSet
+Return a new collection of type \fBSet\fP containing the elements from 
+the receiver collection.
+.Rs asString
+Return a new collection of type \fBString\fP containing the elements from the
+receiver collection.  The elements to be included must all be of type 
+\fBCharacter\fP.  If the receiver was ordered, the elements will be in the same
+order in the new collection, otherwise the elements will be listed in an
+arbitrary order.
+.Rs coerce:
+The argument must be a collection.
+Return a collection, of the same type as the receiver, containing elements
+from the argument collection.  This message is redefined in most subclasses
+of collection.
+.Rs collect:
+The argument must be a one argument block.
+Return a new collection, like the receiver, containing the result of
+evaluating the argument block on each element of the receiver collection.
+.Rs detect:
+The argument must be a one argument block.
+Return the first element in the receiver collection for which the
+argument block evaluates true.  Report an error and return \fBnil\fP if
+no such element exists.
+Note that in unordered collections (such as \fBBags\fP or \fBDictionarys\fP) the first
+element to be encountered that will satisfy the condition may not be 
+easily predictable.
+.Rs detect:ifAbsent:
+Return the first element in the receiver collection for which the
+first argument block evaluates true.  Return the result of evaluating
+the second argument if no such element exists.
+.Rs do:
+The argument must be a one argument block.
+Evaluate the argument block on each element in the receiver collection.
+.Rs includes:
+Return true if the receiver collection contains the argument.
+.Rs inject:into:
+The first argument must be a value, the second a two argument block.
+The second argument is evaluated once for each element in the receiver
+collection, passing as arguments the result of the previous evaluation
+(starting with the first argument) and the element.
+The value returned is the final value generated.
+.Rs isEmpty
+Return true if the receiver collection contains no elements.
+.Rs occurrencesOf:
+Return the number of times the argument occurs in the receiver collection.
+.Rs remove:
+Remove the argument from the receiver collection.  Report an error
+if the element is not contained in the receiver collection. 
+.Rs remove:ifAbsent:
+Remove the first argument from the receiver collection.  Evaluate the second
+argument if not present.
+.Rs reject:
+The argument must be a one argument block.
+Return a new collection like the receiver containing all elements for
+which the argument block returns false.
+.Rs select:
+The argument must be a one argument block.
+Return a new collection like the receiver containing all elements for
+which the argument block returns true.
+.Rs size
+Return the number of elements in the receiver collection.
+.Ex
+i \(<- 'abacadabra'
+i size	10
+i asArray	#( $a $b $a $c $a $d $a $b $r $a )
+i asBag	Bag ( $a $a $a $a $a $r $b $b $c $d)
+i asSet	Set ( $a $r $b $c $d )
+i occurrencesOf: $a	5
+i reject: [:x | x isVowel]	bcdbr
+.Nm Object Collection Bag/Set
+.PP
+\fBBags\fP and \fBSets\fP are each
+unordered collections of elements. 
+Elements in the collections do not have keys, but are added and removed
+directly.
+The difference between a \fBBag\fP and a \fBSet\fP is that each element can occur
+any number of times in a \fBBag\fP, whereas only one copy is inserted into
+a \fBSet\fP.
+.SH
+Responds to
+.Rs add:
+Add the indicated element to the receiver collection.
+.Rs add:withOccurences:
+(\fBBag\fP only) Add the indicated element to the receiver \fBBag\fP the given number
+of times.
+.Rs first n
+Return the first element from the receiver collection.
+As the collection is unordered, the first element
+depends upon certain values in the internal representation, and is
+not guaranteed to be any specific element in the collection.
+.Rs next n
+Return the next element in the collection.
+In conjunction with \fIfirst\fP, this can be used to access each
+element of the collection in turn.
+.Ex
+i \(<- (1 to: 6) asBag	Bag ( 1 2 3 4 5 6 )
+i size	6
+i select: [:x | (x \e\e 2) strictlyPositive]	Bag ( 1 3 5 )
+i collect: [:x | x \e\e 3]	Bag ( 0 0 1 1 2 2 )
+j \(<- ( i collect: [:x | x \e\e 3] ) asSet	Set ( 0 1 2 )
+j size	3
+.LP
+\fBNote:\fP Since \fBBags\fP and \fBSets\fP are unordered, there is no way to
+establish a mapping between the elements of the Bag i in the example above
+and the corresponding elements in the collection that resulted from the
+message collect: [:x | x \e\e 3].
+.Nm Object Collection KeyedCollection
+.PP
+The class \fBKeyedCollection\fP provides protocol for collections with keys,
+such as \fBDictionarys\fP and \fBArrays\fP.
+Since each entry in the collection has both a key and value, the
+method \fIadd:\fP is no longer appropriate.  Instead, the method
+\fIat:put:\fP, which provides both a key and a value, must be used.
+.SH
+Responds to
+.Rs asDictionary
+Return a new collection of type \fBDictionary\fP containing the elements 
+from the receiver collection.
+.Rs at:
+Return the item in the receiver collection whose key matches the argument.
+Produces and error message, and returns nil, if no item is currently in
+the receiver collection under the given key.
+.Rs at:ifAbsent:
+Return the element stored in the dictionary under the key given by the
+first argument.  Return the result of evaluating the second argument if
+no such element exists.
+.Rs atAll:put:
+The first argument must be a collection containing keys valid for the
+receiver.  At each location given by a key in the first argument place
+the second argument.
+.Rs binaryDo:
+The argument must be a two argument block.  This message is similar to \fIdo:\fP,
+however both the key and the element value are passed as argument to the
+block.
+.Rs includesKey:
+Return true if the indicated key is valid for the receiver collection.
+.Rs indexOf:
+Return the key value of the first element in the receiver collection matching
+the argument.
+Produces an error message if no such element exists.
+Note that, as with the message \fIdetect:\fP, in unordered collections the
+first element may not be related in any way to the order in which elements
+were placed into the collection, but is rather implementation dependent.
+.Rs indexOf:ifAbsent:
+Return the key value of the first element in the receiver collection matching
+the argument.
+Return the result of evaluating the second argument if no such element
+exists.
+.Rs keys
+Return a Set containing the keys for the receiver collection.
+.Rs keysDo:
+The argument must be a one argument block.
+Similar to \fIdo:\fP, except that the values passed to the block are the keys
+of the receiver collection.
+.Rs keysSelect:
+Similar to \fIselect\fP, except that the selection is made on the basis of keys
+instead of values.
+.Rs removeKey:
+Remove the object with the given key from the receiver collection.
+Print an error message, and return \fBnil\fP, if no such object exists.
+Return the value of the deleted item.
+.Rs removeKey:ifAbsent:
+Remove the object with the given key from the receiver collection.
+Return the result of evaluating the second argument if no such object
+exists.
+.Rs values
+Return a Bag containing the values from the receiver collection.
+.Ex
+i \(<- 'abacadabra'
+i atAll: (1 to: 7 by: 2) put: $e	ebecedebra
+i indexOf: $r	9
+i atAll: i keys put: $z	zzzzzzzzzz
+i keys	Set ( 1 2 3 4 5 6 7 8 9 10 )
+i values	Bag ( $z $z $z $z $z $z $z $z $z $z )
+#(how odd) asDictionary	Dictionary ( 1 @ #how 2 @ odd )
+.Nm Object Collection KeyedCollection Dictionary
+.PP
+A \fBDictionary\fP is an unordered collection of elements, as are \fBBags\fP
+and \fBSets\fP.
+However, unlike these collections, elements inserted and removed from
+a \fBDictionary\fP must reference an explicit key.  Both the key and value
+portions of an element can be any object, although commonly the keys are
+instances of \fBSymbol\fP or \fBNumber\fP.
+.SH
+Responds to
+.Rs at:put:
+Place the second argument into the receiver collection under the key given
+by the first argument.
+.Rs currentKey
+Return the key of the last element yielded in response to a \fIfirst\fP or
+\fInext\fP request.
+.Rs first n
+Return the first element of the receiver collection.
+Return nil if the receiver collection is empty.
+.Rs next n
+Return the next element of the receiver collection, or nil if no such element
+exists.
+.Ex
+.ta 3i
+i \(<- Dictionary new
+i at: #abc put: #def
+i at: #pqr put: #tus
+i at: #xyz put: #wrt
+i print	Dictionary ( #abc @ #def #pqr @ #tus #xyz @ #wrt )
+i size	3
+i at: #pqr	#tus
+i indexOf: #tus	#pqr
+i keys	Set ( #abc #pqr #xyz )
+i values	Bag ( #wrt #def # tus )
+i collect: [:x | x asString at: 2]	Dictionary ( #abc @ $e #pqr @ $u #xyz @ $r)
+.Nm Object Collection KeyedCollection Dictionary Smalltalk
+.PP
+The class \fBSmalltalk\fP provides protocol for the pseudo variable
+\fBsmalltalk\fP.
+Since it is a subclass of Dictionary, this variable can be used to store
+information, and thus provide a means of communication between objects.
+Other messages modify various parameters used by the Little Smalltalk system.
+.SH
+Responds To
+.Rs date n
+Return the current date and time as a string.
+.Rs display n
+Set execution display to display the result of every expression typed, but
+not for assignments.
+Note that the display behavior can also be modified using the \-d argument
+on the command line.
+.Rs displayAssign n
+Set execution display to display the result of every expression typed,
+including assignment statements.
+.Rs doPrimitive:withArguments: n
+Execute the indicated primitive with arguments given by the second array.
+A few primitives (such as those dealing with process management) cannot be
+executed in this manner.
+.Rs noDisplay n
+Turn off execution display - no results will be displayed unless explicitly
+requested by the user.
+.Rs perform:withArguments: d
+Send indicated message to the receiver, using the arguments given.
+The first value in the argument array is taken to be the receiver of 
+the message.
+Unpredictable results if the number of arguments is not appropriate for
+the given message.
+.Rs sh: n
+The argument, which must be a string, is executed as a Unix command by the
+shell.  The value returned is the termination status of the shell.
+.Rs time: n
+The argument must be a block.  The block is executed, and the number of
+seconds elapsed during execution returned.  Time is only accurate to within
+about one second.
+.Ex
+smalltalk date	Fri Apr 12 16:15:42 1985
+smalltalk perform: #+ withArguments: #(2 5)	7
+smalltalk doPrimitive: 10 withArguments: #(2 5)	7
+.Nm Object Collection KeyedCollection SequenceableCollection
+.PP
+The class \fBSequenceableCollection\fP contains protocol for collections that have
+a definite sequential ordering and are indexed by integer keys.
+Since there is a fixed order for elements, it is possible to refer to the
+last element in a \fBSequenceableCollection\fP.
+.SH
+Responds to
+.Rs ,
+Appends the argument collection to the receiver collection, returning a new
+collection of the same type as the receiver.
+.Rs copyFrom:to:
+Return a new collection, like the receiver, containing the designated
+subportion of the receiver collection.
+.Rs copyWith:
+Return a new collection, like the receiver, with the argument added to 
+the end.
+.Rs copyWithout:
+Return a new collection, like the receiver, with all occurrences of
+the argument removed.
+.Rs equals:startingAt:
+The first argument must be a \fBSequenceableCollection\fP.
+Return true if each element of the receiver collection is equal to the
+corresponding element in the argument offset by the amount given in
+the second argument.
+.Rs findFirst:
+Find the key for the first element whose value satisfies the
+argument block.
+Produce an error message if no such element exists.
+.Rs findFirst:ifAbsent:
+Both arguments must be blocks.
+Find the key for the first element whose value satisfies the first argument block.
+If no such element exists return the value of the
+second argument.
+.Rs findLast:
+Find the key for the last element whose value satisfies the argument block.
+Produce an error message if no such element exists.
+.Rs findLast:ifAbsent:
+Both arguments must be blocks.
+Find the key for the last element whose value satisfies the first argument block.
+If no such element exists return the value of the second argument block.
+.Rs firstKey
+Return the first key valid for the receiver collection.
+.Rs indexOfSubCollection:startingAt:
+.br
+Starting at the position given by the second argument, find the next
+block of elements in the receiver collection which match the collection
+given by the first argument, and return the index for the start of that block. 
+Produce an error message if no such position
+exists.
+.Rs indexOfSubCollection:startingAt:ifAbsent:
+.br
+Similar to \fIindexOfSubCollection:startingAt:\fP, except that the result of the
+exception block is produced if no position exists matching the pattern.
+.Rs last
+Return the last element in the receiver collection.
+.Rs lastKey
+Return the last key valid for the receiver collection.
+.Rs replaceFrom:to:with:
+Replace the elements in the receiver collection in the positions indicated
+by the first two arguments with values taken from the collection given
+by the third argument.
+.Rs replaceFrom:to:with:startingAt:
+.br
+Replace the elements in the receiver collection in the positions indicated
+by the first two arguments with values taken from the collection given
+in the third argument, starting at the position given by the fourth
+argument.
+.Rs reversed n
+Return a collection, like the receiver, with elements reversed.
+.Rs reverseDo:
+Similar to \fIdo\fP:, except that the items are presented in reverse order.
+.Rs sort n
+Return a collection, like the receiver, with the elements sorted
+using the comparison <=.  Elements must be able to respond to the binary
+message <=.
+.Rs sort: n
+The argument must be a two argument block which yields a boolean.
+Return a collection, like the receiver, sorted using the argument
+to compare elements for the purpose of ordering.
+.Rs with:do:
+The second argument must be a two argument block.
+Present one element from the receiver collection and from the collection
+given by the first argument in turn to the second argument block.
+An error message is given if the collections do not have the same number of
+elements.
+.Ex
+i \(<- 'abacadabra'
+i copyFrom: 4 to: 8	cadab
+i copyWith: $z	abacadabraz
+i copyWithout: $a	bcdbr
+i findFirst: [:x | x > $m]	9
+i indexOfSubCollection: 'dab' startingAt: 1	6
+i reversed	arbadacaba
+i , i reversed	abacadabraarbadacaba
+i sort: [:x :y | x >= y]	rdcbbaaaaa	
+.Nm Object Collection KeyedCollection SequenceableCollection Interval
+.PP
+The class \fBInterval\fP represents a sequence of numbers in an arithmetic
+sequence, either ascending or descending.  Instances of \fBInterval\fP are
+created by numbers in response to the message \fIto:\fP or \fIto:by:\fP.
+In conjunction with the message \fIdo:\fP, \fBIntervals\fP create a control
+structure similar to do or for loops in Algol like languages.  For example:
+.DS B
+.sp
+(1 to: 10) do: [:x | x print]
+.sp
+.DE
+will print the numbers 1 through 10.
+Although they are a collection, \fBIntervals\fP cannot be added to.
+They can, however, be accessed randomly using the message \fIat\fP:.
+.SH
+Responds to
+.Rs first
+Produce the first element from the interval.  In conjunction with
+\fIlast\fP, this message may be used to produce each element from the
+interval in turn.  Note that \fBIntervals\fP also respond to the message
+\fIat:\fP, which can be used to produce elements in an arbitrary order.
+.Rs from:to:by:
+Initialize the upper and lower bounds and the step size for the receiver.
+(This is used principally internally by the method for number to create new
+Intervals).
+.Rs next
+Produce the next element from the interval.
+.Rs size
+Return the number of elements that will be generated in producing the
+interval.
+.Ex
+(7 to: 13 by: 3) asArray	#( 7 10 13 )
+(7 to: 13 by: 3) at: 2	10
+(1 to: 10) inject: 0 into: [:x :y | x + y]	55
+(7 to: 13) copyFrom: 2 to: 5	#( 8 9 10 11 )
+(3 to: 5) copyWith: 13	#( 3 4 5 13 )
+(3 to: 5) copyWithout: 4	#( 3 5 )
+(2 to: 4) equals: (1 to: 4) startingAt: 2	True
+.Nm Object Collection KeyedCollection SequenceableCollection List
+.PP
+Lists represent collections with a fixed order, but indefinite
+size.  No keys are used, and elements are added or removed from one end of
+the other.
+Used in this way, Lists
+can perform as \fIstacks\fP or as \fIqueues\fP.  The table below
+illustrates how stack and queue operations can be implemented in terms
+of messages to instances of List.
+.TS
+center;
+l s | l s
+l l | l l.
+\fIstack operations\fP	\fIqueue operations\fP
+
+_
+push	addLast:	add	addLast:	
+pop	removeLast	first in queue	first	
+top	last	remove first in queue	removeFirst
+test empty	isEmpty	test empty	isEmpty
+.TE
+.SH
+Responds to
+.Rs add:
+Add the element to the beginning of the receiver collection.  This is the same
+as \fIaddFirst:\fP.
+.Rs addAllFirst:
+The argument must be a SequenceableCollection.  The elements of the argument
+are added, in order, to the front of the receiver collection.
+.Rs addAllLast:
+The argument must be a SequenceableCollection.  The elements of the argument
+are added, in order, to the end of the receiver collection.
+.Rs addFirst:
+The argument is added to the front of the receiver collection.
+.Rs addLast:
+The argument is added to the back of the receiver collection.
+.Rs removeFirst
+Remove the first element from the receiver collection, returning the
+removed value.
+.Rs removeLast
+Remove the last element from the receiver collection, returning the
+removed value.
+.Ex
+i \(<- List new
+i addFirst: 2 / 3	List ( 0.6666 )
+i add: $A	
+i addAllLast: (12 to: 14 by: 2)
+i print	List ( 0.6666 $A 12 14 )
+i first	0.6666
+i removeLast	14
+i print	List ( 0.6666 $A 12 )
+.Nm Object Collection KeyedCollection SequenceableCollection List Semaphore
+.PP
+Semaphores are used to synchronize concurrently running \fBProcesses\fP.
+.SH
+Responds To
+.Rs new:
+If created using \fInew\fP, a \fBSemaphore\fP starts out with zero excess
+signals.  Alternatively, a \fBSemaphore\fP can be created with an arbitrary
+number of excess signals by giving it an argument to \fInew\fP:.
+.Rs signal
+If there is a process blocked on the semaphore is it scheduled for
+execution, otherwise 
+the number of excess signals is incremented by one.
+.Rs wait
+If there are excess signals associated with the semaphore the number of
+signals is decremented by one, otherwise
+the current process is placed on the semaphore queue.
+.Nm Object Collection KeyedCollection SequenceableCollection File
+.PP
+A \fBFile\fP is a type of collection where the elements of the collection are
+stored on an external medium, typically a disk.
+For this reason, although most operations on collections are defined for
+files, many can be quite slow in execution.
+A file can be opened on one of three \fImodes\fP:
+In \fIcharacter\fP mode every read returns a single character from the
+file.
+In \fIinteger\fP mode every read returns a single word, as an integer value.
+In \fIstring\fP mode every read returns a single line, as a \fBString\fP.
+For writing, character and string modes will write the string representation
+of the argument, while integer mode must write only a single integer.
+.SH
+Responds To
+.Rs at:
+Return the object stored at the indicated position.  Position is given as a
+character count from the start of the file.
+.Rs at:put:
+Place the object at the indicated position in the file.  Position is given
+as a character count from the start of the file.
+.Rs characterMode
+Set the mode of the receiver file to \fIcharacter\fP.
+.Rs currentKey
+Return the current position in the file, as a character count from the
+start of the file.
+.Rs integerMode
+Set the mode of the receiver file to \fIinteger\fP.
+.Rs open:
+Open the indicated file for reading.
+The argument must be a \fBString\fP.
+.Rs open:for:
+The \fIfor:\fP argument must be one of 'r', 'w' or 'r+' 
+(see fopen(3) in the Unix programmers
+manual).  Open the file in the indicated mode.
+.Rs read
+Return the next object from the file.
+.Rs size
+Return the size of the file, in character counts.
+.Rs stringMode
+Set the mode of the receiver file to \fIstring\fP.
+.Rs write:
+Write the argument into the file.
+.Nm Object Collection KeyedCollection SequenceableCollection ArrayedCollection
+.PP
+The class \fBArrayedCollection\fP provides protocol for collections with a 
+Fixed size and integer keys.
+Unlike other collections, which are created using the message \fInew\fP,
+instances of \fBArrayedCollection\fP must be created using the one argument
+message \fInew:\fP.  The argument given with this message must be a positive
+integer, representing the size of the collection to be created.
+In addition to the protocol shown, many of the methods inherited
+from superclasses are redefined in this class.
+.SH
+Responds to
+.Rs =
+The argument must also be an \fBArray\fP.  Test whether the receiver and the
+argument have equal elements listed in the same order.
+.Rs at:ifAbsent:
+Return the element stored with the given key.  Return the result
+of evaluating the second argument if the key is not valid for the
+receiver collection.
+.Rs padTo: n
+Return an array like the received that is at least as long as the argument
+value.  Returns the receiver if it is already longer than the argument.
+.Ex
+\&'small' = 'small'	True
+\&'small' = 'SMALL'	False
+\&'small' asArray	#( $s $m $a $l $l)
+\&'small' asArray = 'small'	True
+#(1 2 3) padTo: 5	#(1 2 3 nil nil)
+#(1 2 3) padTo: 2	#(1 2 3)
+.Nm Object Collection KeyedCollection SequenceableCollection ArrayedCollection Array
+.PP
+Instances of the class \fBArray\fP are perhaps the most commonly used 
+data structure in Smalltalk programs.
+\fBArrays\fP are represented textually by a pound sign preceding the list of
+array elements.
+.SH
+Responds to
+.Rs at:
+Return the item stored in the position given by the argument.
+An error message is produced, and \fBnil\fP returned, if the argument is not
+a valid key.
+.Rs at:put:
+Store the second argument in the position given by the first argument.
+An error message is produced, and \fBnil\fP returned, if the argument is not
+a valid key.
+.Rs grow:
+Return a new array one element larger than the receiver, with the argument
+value attached to the end.  This is a slightly more efficient command than
+\fIcopyWith:\fP, although the effect is the same.
+.Ex
+i \(<- #(110 101 97)
+i size	3
+i \(<- i grow: 116	#( 110 101 97 116)
+i \(<- i collect: [:x | x asCharacter]	#( #n #e #a #t )
+i asString	neat
+.Nm Object Collection KeyedCollection SequenceableCollection ArrayedCollection ByteArray
+.PP
+A \fBByteArray\fP is a special form of array in which the elements must be
+numbers in the range 0-255.  Instances of \fBByteArray\fP are given a very
+compact encoding, and are used extensively internally in the Little
+Smalltalk system.
+A \fBByteArray\fP can be represented textually by a pound sign preceding
+the list of array elements surrounded by a pair of square braces.
+.SH
+Responds to
+.Rs at:
+Return the item stored in the position given by the argument.
+An error message is produced, and \fBnil\fP returned, if the argument is not
+a valid key.
+.Rs at:put:
+Store the second argument in the position given by the first argument.
+An error message is produced, and \fBnil\fP returned, if the argument is not
+a valid key.
+.Ex
+i \(<- #[110 101 97]
+i size	3
+i \(<- i copyWith: 116	#[ 110 101 97 116 ]
+i \(<- i asArray collect: [:x | x asCharacter]	#( #n #e #a #t )
+i asString	neat
+.Nm Object Collection KeyedCollection SequenceableCollection ArrayedCollection String
+.PP
+Instances of the class \fBString\fP are similar to \fBArrays\fP, except
+that the individual elements 
+must be \fBCharacter\fP.  \fBStrings\fP are represented literally by placing single
+quote marks around the characters making up the string.
+\fBStrings\fP also differ from \fBArrays\fP in that
+Strings possess an ordering, given by the underlying ascii sequence.
+.SH
+Responds to
+.Rs ,
+Concatenates the argument to the
+receiver string, producing a new string.
+If the argument is not a \fBString\fP it is first converted 
+using \fIprintString\fP.
+.Rs <
+The argument must be a \fBString\fP.  Test if the receiver is lexically
+less than the argument.  For the purposes of comparison case differences
+are ignored.
+.Rs <=
+Test if the receiver is lexically less than or equal to the
+argument.
+.Rs >=
+Test if the receiver is lexically greater than or equal to the argument.
+.Rs >
+Test if the receiver is lexically greater than the argument.
+.Rs asSymbol r
+Return a \fBSymbol\fP with characters given by the receiver string.
+.Rs at:
+Return the character stored at the position given by the argument.  
+Produce and error message, and return \fBnil\fP, if the argument does not represent
+a valid key.
+.Rs at:put:
+Store the character given by second argument at the location given by
+the first argument.  Produce an error message, and return \fBnil\fP, if either
+argument is invalid.
+.Rs copyFrom:length: n
+Return a substring of the receiver.  The substring is taken from the
+indicated starting position in the receiver and extends for the given length.
+Produce an error message, and return \fBnil\fP, if the given positions are
+not legal.
+.Rs copyFrom:to: r
+Return a substring of the receiver.  The substring is taken from the
+indicated positions.
+Produce an error message, and return \fBnil\fP, if the given positions are
+not legal.
+.Rs printAt: n
+The argument must be a \fBPoint\fP which describes a location on the
+terminal screen.  The string is printed at the specified location.
+.Rs size
+Return the number of characters stored in the string.
+.Rs sameAs:
+Return true if the receiver and argument string match with the exception of
+case differences.  Note that the boolean message = , inherited from
+ArrayedCollection, can be used to see if two strings are the same including
+case differences.
+.Ex
+\&'example' at: 2	$x
+\&'bead' at: 1 put: $r	read
+\&'small' > 'BIG'	True
+\&'small' sameAs: 'SMALL'	True
+\&'tary' sort	arty
+\&'Rats live on no evil Star' reversed	ratS live on no evil staR
+.Nm Object Block
+.PP
+Although it is easy for the programmer to think of blocks as a syntactic
+construct, or a control structure, they are actually objects, and share
+attributes of all other objects in the Smalltalk system, such as the
+ability to respond to messages.
+.SH
+Responds to
+.Rs fork
+Start the block executing as a \fBProcess\fP.
+The value \fBnil\fP is immediately returned,
+and the \fBProcess\fP created from the block 
+is scheduled to run in parallel with the current process.
+.Rs forkWith:
+Similar to \fIfork\fP, except that the array is passed as arguments to the
+receiver block prior to scheduling for execution.
+.Rs newProcess
+A new \fBProcess\fP is created for the block, but is not
+scheduled for execution.
+.Rs newProcessWith: n
+Similar to \fInewProcess\fP, except that the array is passed as arguments to the
+receiver block prior to it being made into a process.
+.Rs value
+Evaluates the receiver block.  Produces an error message, and returns nil,
+if the receiver block required arguments.  Return the value yielded by
+the block.
+.Rs value:
+Evaluates the receiver block.  Produces an error message, and returns nil,
+if the receiver block did not require a single argument.  Return the
+value yielded by the block.
+.Rs value:value:
+Two argument block evaluation.
+.Rs value:value:value:
+Three argument block evaluation.
+.Rs value:value:value:value:
+Four argument block evaluation.
+.Rs value:value:value:value:value:
+.br
+Five argument block evaluation.
+.Rs whileTrue:
+The receiver block is repeatedly evaluated.  While it evaluates to true,
+the argument block is also evaluated.  Return nil when the receiver block
+no longer evaluates to true.
+.Rs whileTrue
+The receiver block is repeatedly evaluated until it returns a value that is
+not true.
+.Rs whileFalse:
+The receiver block is repeatedly evaluated.  While it evaluates to false,
+the argument block is also evaluated.  Return nil when the receiver block
+no longer evaluates to false.
+.Rs whileFalse
+The receiver block is repeatedly evaluated until it returns a value that is
+not false.
+.Ex
+['block indeed'] value	block indeed
+[:x :y | x + y + 3] value: 5 value: 7	15
+.Nm Object Class
+.PP
+The class \fBClass\fP provides protocol for manipulating class instances.
+An instance of class \fBClass\fP is generated for each class in the Smalltalk
+system.  New instances of this class are then formed by sending messages
+to the class instance.
+.SH
+Responds to
+.Rs deepCopy: n
+The argument must be an instance of the receiver class.  A deepCopy
+of the argument is returned.
+.Rs edit n
+The user is placed into a editor editing the file from which the class
+description was originally obtained.  When the editor terminates, the class
+description will be reparsed and will override the previous description.
+See also \fIview\fP (below).
+.Rs list n
+Lists all subclasses of the given class recursively.
+In particular, \fBObject\fP \fIlist\fP will list the names of all the 
+classes in the system.
+.Rs new
+A new instance of the receiver class is returned.  If the methods for
+the receiver contain protocol for \fInew\fP, the new instance will
+first be passed this message.
+.Rs new:
+A new instance of the receiver class is returned.  If the methods for
+the receiver contain protocol for \fInew:\fP, the new instance will
+first be passed this message.
+.Rs respondsTo n
+List all the messages that the current class will respond to.
+.Rs respondsTo: d
+The argument must be a Symbol.  Return true if the receiver class,
+or any of its superclasses, contains a method
+for the indicated message. Return false otherwise.
+.Rs shallowCopy: n
+The argument must be an instance of the receiver class.  A shallowCopy
+of the argument is returned.
+.Rs superClass n
+Return the superclass of the receiver class.
+.Rs variables n
+Return an array containing the names of the instance variables used in
+the receiver class.
+.Rs view n
+Place the user into an editor viewing the class description from which the
+class was created.  Changes made to the file will not, however, affect the
+current class representation.
+.Ex
+Array new: 3	#( nil nil nil )
+Bag respondsTo: #add:	True
+SequenceableCollection superClass	KeyedCollection
+.Nm Object Process
+.PP
+Processes are created by the system, or by passing the message \fInewProcess\fP
+or \fIfork\fP to a block; they cannot be created directly by the user.
+.SH
+Responds To
+.Rs block
+The receiver process is marked as being blocked.  This is usually 
+the result of a semaphore wait.
+Blocked processes are not executed.
+.Rs resume
+If the receiver process has been \fIsuspend\fPed, it is rescheduled for
+execution.
+.Rs suspend
+If the receiver process is scheduled for execution, it is marked as
+suspended.  Suspended processes are not executed.
+.Rs state
+The current state of the receiver process is returned as a Symbol.
+.Rs terminate
+The receiver process is terminated.  Unlike a blocked or suspended process,
+a terminated process cannot be restarted.
+.Rs unblock
+If the receiver process is currently blocked, it is scheduled for
+execution.
+.Rs yield
+Returns \fBnil\fP.  As a side effect, however, 
+if there are pending processes the current process is
+placed back on the process queue and another process started.

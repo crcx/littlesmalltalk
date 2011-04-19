@@ -1,0 +1,83 @@
+*
+* Little Smalltalk, version 2
+* Written by Tim Budd, Oregon State University, July 1987
+*
+* multiprocess scheduler - this is optional
+*
+Declare Scheduler Object processList
+Declare Process Object interpreter
+Declare Interpreter Object context prev creating stack stackTop byteCodePointer
+Instance Scheduler scheduler
+Class Block
+	newProcess
+		^ (context newInterpreter: bytecodeCounter) newProcess
+|
+	fork
+		self newProcess resume
+]
+Class Method
+	executeWith: arguments
+		( ( Context new ; method: self ; 
+			temporaries: ( Array new: temporarySize) ;
+			arguments: arguments ) newInterpreter: 0 )
+				newProcess resume
+]
+Class Scheduler
+	new
+		processList <- Set new
+|
+	addProcess: aProcess
+		processList add: aProcess
+|
+	removeProcess: aProcess
+		processList remove: aProcess
+|
+	run
+		[ processList size ~= 0 ] whileTrue:
+			[ processList do: [ :x | x execute ] ]
+]
+Class Process
+	execute 	| i |
+		i <- 0.
+		[(i < 200) and: [ interpreter notNil ]]
+			whileTrue: [ interpreter <- interpreter execute.
+					i <- i + 1 ].
+		(interpreter isNil)
+			ifTrue: [ self terminate ]
+|
+	interpreter: value
+		interpreter <- value
+|
+	resume
+		scheduler addProcess: self
+|
+	terminate
+		scheduler removeProcess: self
+]
+Class Interpreter
+	new
+		stackTop <- 0.
+		byteCodePointer <- 0
+|
+	execute
+		^ <19 self>
+|
+	byteCounter: start
+		byteCodePointer <- start
+|
+	context: value
+		context <- value
+|
+	stack: value
+		stack <- value.
+|
+	newProcess
+		^ Process new; interpreter: self
+]
+Class Context
+	newInterpreter: start
+		^ Interpreter new;
+			context: self;
+			byteCounter: start;
+			stack: (Array new: 20)
+]

@@ -1,0 +1,19 @@
+ _     _ _   _   _         ____                  _ _ _        _ _    
+| |   (_) |_| |_| | ___   / ___| _ __ ___   __ _| | | |_ __ _| | | __
+| |   | | __| __| |/ _ \  \___ \| '_ ` _ \ / _` | | | __/ _` | | |/ /
+| |___| | |_| |_| |  __/   ___) | | | | | | (_| | | | || (_| | |   < 
+|_____|_|\__|\__|_|\___|  |____/|_| |_| |_|\__,_|_|_|\__\__,_|_|_|\_\                                                                   
+===============================================================================
+This is the code for the latest revisions to the third version of Little 
+Smalltalk. The source tree has been reorganized a bit, the Makefile is simpler, 
+and the source has been adapted to work on modern Unix-like OSes such as Linux.
+
+Development is sporadic, but ongoing. I hope to continue working on this for 
+years to come, keeping it as small, simple, and elegant as possible.
+
+As with the original version of LST3, you can use this code freely and without 
+restriction of any kind. This is public domain, as granted by the original 
+author, Tim Budd.
+
+-- Charles Childers
+===============================================================================

@@ -1,0 +1,860 @@
+.ds CM
+.TL
+A Little Smalltalk
+User Manual
+.AU
+Timothy A. Budd
+.po +0.2i
+.nr PO +0.2i
+.NH 1
+Introduction
+.PP
+This manual is intended as an aid in using the Little Smalltalk system.
+It is not intended to be used as an introduction to the Smalltalk
+language.
+Little Smalltalk is largely (with exceptions listed in a later section)
+a subset of the Smalltalk-80\s-2\u*\d\s+2 language described 
+.FS
+* Smalltalk-80 is a trademark of the Xerox Corporation.
+.FE
+in [.Smalltalk blue.].
+A complete description of the classes included in the Little Smalltalk system
+and the messages they accept is given in Appendix 1.
+.NH 1
+Running the system
+.PP
+The Little Smalltalk system is invoked by typing the command \fBst\fP.
+The system is interactive \- that is, the user types an expression at the
+keyboard and the system responds by evaluating the expression and typing
+the result.
+For example,
+typing the expression \fB3 + 4\fP results in the value \fB7\fP being 
+displayed on
+the output.  Execution is terminated by typing control\-D.  A sample
+execution session is shown in Figure 1.
+.KF
+.sp
+.DS B
+% st
+Little Smalltalk
+	3 + 4
+7
+	^D
+%
+.DE
+.sp
+.ce
+\fBFigure 1:\fP A Sample Little Smalltalk Session
+.sp
+.KE
+.PP
+Instance variables for the command level can be created by
+assigning a value to a new variable name.  Thereafter that variable can
+be used at the command level, although it is not known within the scope
+of any method.  The variable ``last'' always contains the value
+returned by the last expression typed.
+Figure 2 shows the creation of a variable.
+Note that the assignment arrow is formed as a two character sequence.
+.KF
+.sp
+.DS B
+.ta 5m
+	newvar <\(mi 2 / 3
+	newvar
+0.666667
+	2 raisedTo: newvar + (4 / 3)
+4
+	last
+4
+.DE
+.sp
+.ce
+\fBFigure 2:\fP Creating Variables
+.sp
+.KE
+.PP
+The default behavior is for the value of expressions,
+with the exception of assignments, to be typed
+automatically as they are evaluated.
+This behavior can be modified either by using the \-d flag
+(see Appendix 2), or by passing a message to the pseudo
+variable \fBsmalltalk\fP (see Appendix 1).
+.PP
+Class descriptions must be read in from files, they cannot be entered
+interactively.  Class descriptions are entered using a system directive.
+For example, to include a class description contained in a file named
+\fBnewclass.st\fP, the following system directive should be issued:
+.sp
+.ce
+)i newclass.st
+.sp
+A list of files containing class descriptions can also be given as
+arguments to the st command.  The command
+.DS B
+%st file\s-2\d1\u\s+2 ... file\s-2\dn\u\s+2
+.DE
+is equivalent to the sequence
+.DS B
+.ta 5m
+%st
+Little Smalltalk
+	)i file\s-2\d1\u\s+2
+	...
+	)i file\s-2\dn\u\s+2
+.DE
+.PP
+A table of system directives is given in Figure 3.
+.KF
+.sp
+.TS
+center box;
+l lw(4.5i).
+
+)e filename	T{
+Edit the named file.  The Little Smalltalk system will suspend, leaving
+the user in an editor for making changes to the named file.  Upon leaving
+the editor the named file will automatically be included, as if the )i
+directive had been typed.
+T}
+
+)g filename	T{
+Search for an entry in the system library area matching the filename.
+If found, the class descriptions in the library entry are included.
+This command is useful for including commonly used classes that are not
+part of the standard prelude, such as classes for statistics applications
+or graphics.
+T}
+
+)i filename	T{
+Include the named file.  The file must contain one or more class descriptions.
+The class descriptions are parsed, and if syntactically legal new
+instances of class \fBClass\fP are added to the Smalltalk system.
+T}
+
+)l filename	T{
+Load a previously saved environment from the named file.
+The current values of all variables are overridden.
+The file must have been created using the )s directive (below).
+T}
+
+)r filename	T{
+Read the named file.  The file must contain Smalltalk statements, as
+would be typed at the keyboard.  The effect is just as if the lines
+of the file had been typed at the keyboard.  The file cannot contain
+class descriptions.
+T}
+
+)s filename	T{
+Save the current state in the named file.  The values of all variables
+are saved, and can later be reloaded using the )l directive (above).
+T}
+
+)!string	T{
+Execute the remainder of the line following the exclamation point
+as a Unix\s-2\u*\d\s+2 command.  Nothing is done with the output of the command,
+nor is the returning status of the command recorded.
+T}
+
+.TE
+.sp
+.ce
+\fBFigure 3:\fP System Directives
+.sp
+.KE
+.PP
+Note that the )e system directive invokes an editor on a file
+containing class descriptions, and then automatically includes the file
+when the editor is exited.  
+Classes also respond to the message \fBedit\fP, which will have the same
+effect as the )e directive applied to the file containing the class
+description.
+Thus the typical debug/edit/debug cycle
+involves repeated uses of the )e directive or the \fBedit\fP message
+until a desired outcome is achieved.
+The editor invoked by the )e directive can be changed by setting
+the EDITOR variable in the users environment.
+.NH 1
+Differences between Little Smalltalk and the Smalltalk-80 system
+.PP
+This section describes the differences between the language accepted by
+the Little Smalltalk system and the language described in
+[.Smalltalk blue.].  The principal reasons for these changes are
+as follows:
+.IP size 6.5m
+Classes which are largely unnecessary, or which could be easily
+simulated by other classes (e.g. Association, SortedCollection) have
+been eliminated in the interest of keeping the size of the standard
+library as small as possible.  Similarly, indexed instance variables are
+not supported, since to do so would increase the size of every object in
+the system, and they can be easily simulated in those classes in which
+they are important (see below).
+.IP portability
+Classes which depend upon particular hardware (e.g. BitBlt) are not included
+as part of the Little Smalltalk system.  The basic system assumes nothing
+more than ascii terminals.
+.IP representation
+The need for a textual representation for class descriptions required some
+small additions to the syntax for class methods (see Appendix 3).
+Similarly, the fact that classes and subclasses can be separately parsed,
+in either order, forced some changes in the scoping rules for instance
+variables.
+.PP
+The following sections describe these changes in more detail.
+.NH 2
+No Browser
+.PP
+The Smalltalk-80 Programming Environment described in [.Smalltalk orange.]
+is not included as part of the Little Smalltalk system.  The Little
+Smalltalk system is designed to be little, easily portable, and to
+rely on nothing more than basic terminal capabilities.
+.NH 2
+Internal Representation Different
+.PP
+The internal representations of objects, including processes, interpreters,
+and bytecodes, is entirely different in the Little Smalltalk system from
+the Smalltalk-80 system described in [.Smalltalk blue.].  
+.FS
+* Unix is a trademark of Bell Laboratories.
+.FE
+.NH 2
+Fewer Classes
+.PP
+Many of the classes described in [.Smalltalk blue.] are not included as
+part of the Little Smalltalk basic system.  Some of these are not
+necessary because of the decision not to include the editor, browser,
+and so on as part of the basic system.  Others are omitted in the interest
+of keeping the standard library of classes small.  A complete list
+of included classes for the Little Smalltalk system is given in Appendix 1.
+.NH 2
+No Class Protocol
+.PP
+Protocol for all classes is defined as part of class \fBClass\fP.
+It is not possible to redefine class protocol as part of a class description,
+only instance protocol.
+The notion of metaclasses is not supported.
+.NH 2
+Cascades Different
+.PP
+The semantics of cascades has been simplified and generalized.
+The result of a cascaded expression is always the result of the expression
+to the left of the first semicolon, which is also the receiver for each
+subsequent continuation.  Continuations can include multiple messages.
+A rather nonsensical, but illustrative, example is the following:
+.DS B
+2 + 3 ; \(mi 7 + 3 ; * 4
+.DE
+.LP
+The result of this expression is 5 (the value yielded by 2 + 3).  5 is also
+the receiver for the message \(mi 7, and that result (\(mi2) is in turn the
+receiver for the message + 3.  This last result is thrown away.  5 is then
+again used as the receiver for the message * 4, the result of which is also
+thrown away.
+.NH 2
+Instance Variable Name Scope
+.PP
+In the language described in [.Smalltalk blue.], an instance variable is
+known not only to the class protocol in which it is declared, but is also
+valid in methods defined for any subclasses of that class.
+In the Little Smalltalk system an instance variable can be referenced only
+within the protocol for the class in which it is declared.
+.NH 2
+Indexed Instance Variables
+.PP
+Implicitly defined indexed instance variables are not supported.
+In any class for which these are desired they can be easily simulated by
+including an additional instance variable, containing an Array, and
+including the following methods:
+.DS B
+.ta 4m 8m
+Class Whatever
+| indexVars |
+[
+	new: size
+		indexVars <\(mi Array new: size
+
+|	at: location
+		\(ua indexVars at: location
+
+|	at: location put: value
+		indexVars at: location put: value
+
+	...
+.sp
+.DE
+.PP
+The message new: can be used with any class, with an effect similar to
+new.  That is, if a new instance of the class is created by sending the
+message new: to the class variable, the message is immediately passed 
+on to the new instance, and the result returned is used as the result of
+the creation message.
+.NH 2
+No Pool Variables
+.PP
+The concepts of pool variables, global variables, or class variables are
+not supported.
+In their place there is a new pseudo-variable, \fBsmalltalk\fP, which
+responds to the messages \fBat:\fP and \fBat:put:\fP.
+The keys for this collection can be arbitrary.
+Although this facility is available, its use is often a sign of poor
+program design, and should be avoided.
+.NH 2
+No Associations
+.PP
+The class Dictionary stores keys and values separately, rather than
+as instances of Association.  The class Association, and all messages
+referring to Associations have been removed.
+.NH 2
+Generators in place of Streams
+.PP
+The notion of stream has been replaced by the slightly different notion of
+\fIgenerators\fP, in particular the use of the messages \fIfirst\fP 
+and \fInext\fP in subclasses of \fBCollection\fP.
+External files are supported by an explicit class \fBFile\fP.
+.NH 2
+Primitives Different
+.PP
+Both the syntax and the use of primitives has been changed.
+Primitives provide an interface between the Smalltalk world and the
+underlying system, permitting the execution of operations that cannot be
+specified in Smalltalk.  In Little Smalltalk, primitives cannot fail and
+must return a value (although they may, in error situations, print an error
+message and return \fBnil\fP).
+The syntax for primitives has been altered to permit the specification of
+primitives with an arbitrary number of arguments.  The format for a
+primitive call is as follows:
+.DS B
+<primitive \fBnumber\fP \fIargumentlist\fP >
+.DE
+Where \fBnumber\fP is the number of the primitive to be executed
+(which must be a value between 1 and 255),
+and \fIargumentlist\fP is a list of Smalltalk primary expressions (see
+Appendix 2).  Appendix 4 lists the meanings of each of the currently
+recognized primitive numbers.
+.NH 2
+Byte Arrays
+.PP
+A new syntax has been created for defining an array composed entirely of
+unsigned integers in the range 0-255.  These arrays are given a very
+tight encoding.  The syntax is a pound sign, followed by a left square
+brace, followed by a sequence of numbers in the range 0 to 255, followed by
+a right square brace.
+.DS B
+#[ \fInumbers\fP ]
+.DE
+.LP
+Byte Arrays are used extensively internally.
+.NH 2
+New Pseudo Variables
+.PP
+In addition to the pseudo variable \fBsmalltalk\fP already mentioned,
+another pseudo variable, \fBselfProcess\fP, has beed added to the Little
+Smalltalk system.  \fBselfProcess\fP returns the currently executing process,
+which can then be passed as an argument to a semaphore, or
+be used as a receiver for a message valid for class \fBProcess\fP.
+Like \fBself\fP and \fBsuper\fP, \fBselfProcess\fP cannot be used at 
+the command level.
+.NH 2
+No Dependency
+.PP
+The notion of dependency, and automatic dependency updating, is not
+included in Little Smalltalk.
+.[]
+.ds CH
+.bp
+.SH
+.ce 2
+Appendix 1
+Class Descriptions
+.PP
+The messages accepted by the classes included in the Little Smalltalk
+standard library are described in the following pages.  
+A list of the classes
+defined, where indentation is used to imply subclassing, is given below:
+.DS I
+.ta 3m 6m 9m 12m 15m
+Object
+	UndefinedObject
+	Symbol
+	Boolean
+		True
+		False
+	Magnitude	
+		Char
+		Number
+			Integer
+			Float
+		Radian
+		Point
+	Random
+	Collection
+		Bag
+		Set
+		KeyedCollection
+			Dictionary
+				Smalltalk
+			File
+			SequenceableCollection
+				Interval
+				LinkedList
+					Semaphore
+				File
+				ArrayedCollection
+					Array
+					ByteArray
+					String
+	Block
+	Class
+	Process
+.DE
+.PP
+In the descriptions of each message the following notes may occur:
+.IP \fId\fP
+Indicates the effect of the message differs slightly from that given
+in [.Smalltalk blue.].
+.IP \fIn\fP
+Indicates the message is not included as part of the language defined
+in [.Smalltalk blue.].
+.IP \fIr\fP
+Indicates the protocol for the message overrides a protocol given in
+some superclass.  Only where the logical effect of this overriding is
+important is the message given a second time; some messages, such as
+copy, are overridden in many classes but are not described in the documentation 
+because the logical effect remains the same.
+.bp
+.SH
+.ce 2
+Appendix 2
+Man Page
+.PP
+A Unix man page for the st command is given on the following page.
+.bp
+.SH
+.ce 2
+Appendix 3
+Syntax Charts
+.PP
+Syntax charts for the language accepted by the Little Smalltalk system
+are described on the following pages.
+The following is an example class description:
+.DS B
+Class Set :Collection
+| dict |
+[
+        new
+                dict <\(mi Dictionary new
+
+|       add: newElement
+                dict at: newElement 
+                     ifAbsent: [dict at: newElement put: 1]
+
+|       remove: oldElement ifAbsent: exceptionBlock
+		dict removeKey: oldElement ifAbsent: exceptionBlock
+
+|       size
+                \(ua dict size
+
+|       occurrencesOf: anElement
+                \(ua dict at: anElement ifAbsent: [0]
+
+|       first
+                dict first.
+		\(ua dict currentKey
+
+|       next
+                dict next.
+		\(ua dict currentKey
+
+]
+.DE
+.bp
+.SH
+.ce 2
+Appendix 4
+Primitive Numbers
+.PP
+The following chart gives the function performed by each primitive in the
+Little Smalltalk system.
+.SH
+Information about objects
+.IP 0
+(not used )
+.IP 1
+class of an object
+.IP 2
+superobject of an object
+.IP 3
+test if class responds to new
+.IP 4
+size of object
+.IP 5
+hash value 
+.IP 6
+test if two built-in objects are of the same type
+.IP 7
+object equality testing ( == )
+.IP 8
+various switch toggles
+.IP 9
+numerical generality testing
+.SH
+Integer manipulation
+.IP 10
+integer addition (both args must be integer)
+.IP 11
+integer subtraction
+.IP 12
+integer < test
+.IP 13
+integer > test
+.IP 14
+integer \(<= test
+.IP 15
+integer \(>= test
+.IP 16
+integer = test
+.IP 17
+integer ~= test
+.IP 18
+integer multiplication
+.IP 19
+integer //
+.SH
+Bit manipulation and other integer valued functions
+.IP 20
+gcd:
+.IP 21
+bitAt:
+.IP 22
+bitOr:
+.IP 23
+bitAnd:
+.IP 24
+bitXor:
+.IP 25
+bitShift:
+.IP 26
+radix:
+.IP 27
+not used
+.IP 28
+integer quo:
+.IP 29
+integer rem:
+.SH
+Other integer functions
+.IP 30
+doPrimitive:withArguments: 
+.IP 31
+not used
+.IP 32
+convert random integer to random float
+.IP 33
+bitInvert
+.IP 34
+highBit
+.IP 35
+randomNumber (argument is seed )
+.IP 36
+asCharacter
+.IP 37
+asString
+.IP 38
+factorial
+.IP 39
+asFloat
+.SH
+Character manipulation
+.IP 40
+not used
+.IP 41.
+not used
+.IP 42
+character < test
+.IP 43
+character > test
+.IP 44
+character \(<= test
+.IP 45
+character \(>= test
+.IP 46
+character = test
+.IP 47
+character ~= test
+.IP 48
+not used
+.IP 49
+not used
+.SH
+Character unary functions
+.IP 50
+digitValue
+.IP 51
+isVowel
+.IP 52
+isLetter
+.IP 53
+isLowerCase
+.IP 54
+isUpperCase
+.IP 55
+isSeparator
+.IP 56
+isAlphaNumeric
+.IP 57
+caseShift
+.IP 58
+asString
+.IP 59
+asciiValue
+.SH
+Floating point manipulation
+.IP 60
+floating point addition (both args must be float)
+.IP 61
+floating point subtraction
+.IP 62
+floating point < test
+.IP 63
+floating point > test
+.IP 64
+floating point \(<= test
+.IP 65
+floating point \(>= test
+.IP 66
+floating point = test
+.IP 67
+floating point ~= test
+.IP 68
+floating point multiplication
+.IP 69
+floating point division
+.SH
+Other floating point operations
+.IP 70
+ln
+.IP 71
+sqrt
+.IP 72
+floor
+.IP 73
+ceiling
+.IP 74
+not used
+.IP 75
+integerPart
+.IP 76
+fractionalPart
+.IP 77
+gamma
+.IP 78
+asString
+.IP 79
+exp
+.SH
+Other numerical functions
+.IP 80
+normalize number to be within 0 and 2\(*p.
+.IP 81
+sin 
+.IP 82
+cos
+.IP 83
+not used
+.IP 84
+arcSin
+.IP 85
+arcCos
+.IP 86
+arcTan
+.IP 87
+not used
+.IP 88
+raisedTo:
+.IP 89
+radix:
+.SH
+Symbol Commands
+.IP 90.
+not used
+.IP 91
+symbol comparison, returns true or false.
+.IP 92
+printString
+.IP 93
+asString
+.IP 94
+print (used internally)
+.IP 95
+not used
+.IP 96
+not used
+.IP 97
+build a new class, arguments are class name, superclass name, instance
+variables, messages, methods, context size.
+.IP 98
+insert an object into class dictionary, first argument is symbol,
+second argument is class definition
+.IP 99
+find an object in class dictionary.  argument is symbol.
+.SH
+String operations
+.IP 100
+string length
+.IP 101
+string compare, case important \- return \(mi1, 0 or 1.
+.IP 102
+string compare, case not important
+.IP 103
+string catenation
+.IP 104
+string at:
+.IP 105
+string at:put:
+.IP 106
+copyFrom:length: 
+.IP 107
+copy (new string with same chars)
+.IP 108
+asSymbol
+.IP 109
+string printString
+.SH
+Array manipulation
+.IP 110
+build an untyped object of given size, argument is integer size. 
+.IP 111
+index variable get (first argument is object, second is index)
+.IP 112
+index variable put (first argument is object, second is index, 
+third argument is expression)
+.IP 113
+object grow (returns a new object with same instance variable values
+as first argument, but with second argument tacked on end as new instance variable)
+.IP 114
+build an instance of \fBArray\fP of the given size. 
+.IP 115
+new string of given size 
+.IP 116
+ByteArray new:
+.IP 117
+ByteArray size
+.IP 118
+ByteArray at:
+.IP 119
+ByteArray at:put:
+.SH
+Output and error messages
+.IP 120
+print string with no return
+.IP 121
+print string with return
+.IP 122
+general error - first argument is receiver, second is error string
+.IP 123
+print string on error output (with return)
+.IP 124
+not used
+.IP 125
+unix system call 
+.IP 126
+print a string at a specific point on the terminal
+.IP 127
+block return without surrounding context
+.IP 128
+reference count less than zero, first argument is guilty object 
+.IP 129
+does not respond error, first argument is receiver, second is message. 
+.SH
+File operations
+.IP 130
+file open, first argument is name, second argument is mode
+.IP 131
+file read
+.IP 132
+file write
+.IP 133
+set file mode, first argument is file, second is mode indicator (anInteger)
+.IP 134
+compute file size in bytes
+.IP 135
+file set location (at:) second argument is location (anInteger)
+.IP 136
+return current file offset in bytes
+.IP 137
+not used
+.IP 138
+not used
+.IP 139
+not used
+.SH
+Process management
+.IP 140
+block execute (trapped by interpreter)
+.IP 141
+new process (withArguments:) 
+.IP 142
+terminate a process
+.IP 143
+perform:withArguments: (trapped by interpreter)
+.IP 144.
+not used
+.IP 145
+set state
+.IP 146
+return state
+.IP 148
+start atomic action
+.IP 149
+end atomic action
+.SH
+Operations on classes
+.IP 150
+class edit
+.IP 151
+superclass of a class
+.IP 152
+class name (a Symbol)
+.IP 153
+new instance of a class
+.IP 154
+list all commands class responds to
+.IP 155
+respondsTo: , second argument is a symbol
+.IP 156
+class view (drop into editor, but no include)
+.IP 157
+class list
+.IP 158
+variables (returns an array of symbols)
+.IP 159
+not used
+.SH
+Date and Time
+.IP 160
+current date and time as string
+.IP 161
+seconds time counter
+.IP 162
+clear the screen
+.SH
+Plot(3) interface
+.IP 170
+clear the screen
+.IP 171
+move the cursor (move(x,y))
+.IP 172
+draw a line (cont(x,y))
+.IP 173
+draw a point (point(x,y))
+.IP 174
+draw a circle (circle(x,y,r))
+.IP 175
+draw an arc (arc(x,y,x0,y0,x1,y1))
+.IP 176
+establish the coordinate space (space(a,b,c,d))
+.IP 177
+draw a line (line(a,b,c,d))
+.IP 178
+print a label (label(s))
+.IP 179
+establish a line type (linemod(s))

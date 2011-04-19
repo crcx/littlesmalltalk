@@ -1,0 +1,3903 @@
+COMMENT
+COMMENT imageSource
+COMMENT
+COMMENT The Smalltalk source code of the initial image.
+COMMENT Must be compiled with the image builder tools to
+COMMENT create a binary image for the Little Smalltalk
+COMMENT virtual machine.
+COMMENT
+COMMENT ---------------------------------------------------------------
+COMMENT Little Smalltalk, Version 5
+COMMENT
+COMMENT Copyright (C) 1987-2005 by Timothy A. Budd
+COMMENT Copyright (C) 2007 by Charles R. Childers
+COMMENT Copyright (C) 2005-2007 by Danny Reinhold
+COMMENT
+COMMENT ============================================================================
+COMMENT This license applies to the virtual machine and to the initial image of 
+COMMENT the Little Smalltalk system and to all files in the Little Smalltalk 
+COMMENT packages.
+COMMENT ============================================================================
+COMMENT Permission is hereby granted, free of charge, to any person obtaining a copy 
+COMMENT of this software and associated documentation files (the "Software"), to deal 
+COMMENT in the Software without restriction, including without limitation the rights 
+COMMENT to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+COMMENT copies of the Software, and to permit persons to whom the Software is 
+COMMENT furnished to do so, subject to the following conditions:
+COMMENT
+COMMENT The above copyright notice and this permission notice shall be included in 
+COMMENT all copies or substantial portions of the Software.
+COMMENT
+COMMENT THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+COMMENT IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+COMMENT FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+COMMENT AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+COMMENT LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+COMMENT FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+COMMENT DEALINGS IN THE SOFTWARE.
+COMMENT
+COMMENT
+COMMENT	
+COMMENT-----------------------------------------------------------
+COMMENT RAWCLASS name   instanceOf subclassOf  (instance variable names)
+COMMENT  or... CLASS name subclassOf (instance vars)
+COMMENT RAWCLASS doesn't automatically build Meta class; CLASS does
+COMMENT-----------------------------------------------------------
+COMMENT		The strange circular world at the beginning
+COMMENT RAWCLASS Object MetaObject nil
+RAWCLASS Class      MetaClass Object      name parentClass methods size variables package
+RAWCLASS MetaObject Class     Class
+RAWCLASS MetaClass  Class     MetaObject
+COMMENT--------------------------------------------------------
+COMMENT-------then, the remaining classes in the initial image
+COMMENT----------------------------
+CLASS Undefined     Object
+CLASS Boolean       Object
+CLASS True          Boolean
+CLASS False         Boolean
+CLASS Process       Object context state result
+CLASS Context       Object method arguments temporaries stack bytePointer stackTop previousContext
+CLASS Block         Context argumentLocation creatingContext oldBytePointer
+CLASS Method        Object name byteCodes literals stackSize temporarySize class text package
+CLASS Magnitude     Object
+RAWCLASS MetaSymbol    Class         MetaMagnitude     symbols
+RAWCLASS Symbol        MetaSymbol    Magnitude
+RAWCLASS MetaChar      Class         MetaMagnitude     chars
+RAWCLASS Char          MetaChar      Magnitude         value
+CLASS Collection    Magnitude
+CLASS List          Collection         elements
+CLASS Dictionary    Collection        keys values
+CLASS Array         Collection
+CLASS OrderedArray  Array
+CLASS ByteArray     Array
+CLASS MetaString    Class         MetaArray
+CLASS String        Array
+CLASS Set	    Collection		members growth
+CLASS IdentitySet   Set
+CLASS Number        Magnitude
+CLASS Integer       Number
+CLASS SmallInt      Number
+RAWCLASS MetaSmallInt Class           MetaNumber           seed
+RAWCLASS SmallInt   MetaSmallInt Number
+CLASS Link          Object            value next
+CLASS Node          Object            value left right
+CLASS Interval      Collection        low high step
+CLASS File          Object            fileID
+CLASS Association	Magnitude	key value
+CLASS Tree		Collection	root
+COMMENT ---------- Classes having to do with parsing ------------
+CLASS Parser Object text index tokenType token argNames tempNames instNames maxTemps errBlock lineNum
+CLASS ParserNode Object lineNum
+CLASS Encoder Object name byteCodes index literals stackSize maxStack
+CLASS BodyNode ParserNode statements
+CLASS ReturnNode ParserNode expression
+CLASS AssignNode ParserNode target expression
+CLASS LiteralNode ParserNode value
+CLASS ArgumentNode ParserNode position
+CLASS TemporaryNode ParserNode position
+CLASS InstNode ParserNode position
+CLASS PrimitiveNode ParserNode number arguments
+CLASS BlockNode ParserNode statements temporaryLocation
+CLASS CascadeNode ParserNode head list
+CLASS MessageNode ParserNode receiver name arguments
+RAWCLASS MetaPackage Class MetaObject packages
+RAWCLASS Package MetaPackage Object name version requires
+CLASS PackageRequirement Object name minVersion
+CLASS FFI Object handle name functions
+CLASS System Object
+CLASS Pathname Object path
+CLASS Image Object imagePathname sourcePathname visited
+COMMENT ---------------------------------------------------
+COMMENT ---------- Classes of optional modules ------------
+COMMENT ---------------------------------------------------
+COMMENT --- Package: GUI
+RAWCLASS MetaGuiPrimitives Class MetaObject theInstance
+RAWCLASS GuiPrimitives MetaGuiPrimitives Object iup
+COMMENT ---------- method bodies ------------
+COMMENT -----------Object-------------------
+METHOD MetaObject
+in: object at: index put: value
+	" change data field in object, used during initialization "
+	" returns the intialized object "
+	<5 value object index>
+!
+METHOD Object
+in: object at: index
+	" browse instance variable via debugger "
+	<24 object index>.
+	self primitiveFailed
+!
+METHOD Object
+isNil
+	^ false
+!
+METHOD Object
+notNil
+	^ true
+!
+METHOD Object
+== arg
+	<1 self arg>
+!
+METHOD Object
+= arg
+	^ self == arg
+!
+METHOD Object
+~= arg
+	^ (self = arg) not
+!
+METHOD Object
+~~ arg
+	^ (self == arg) not
+!
+METHOD Object
+class
+	<2 self>
+!
+METHOD Object
+printString
+	^self class printString
+!
+METHOD Object
+asString
+  ^self printString
+!
+METHOD Object
+isMemberOf: aClass
+	^ self class == aClass
+!
+METHOD Object
+isKindOf: aClass	| clas |
+	clas <- self class.
+	[ clas notNil ] whileTrue:
+		[ clas == aClass ifTrue: [ ^ true ].
+		  clas <- clas superclass ].
+	^ false
+!
+METHOD Object
+respondsTo: aMessage
+	^ self class allMethods includes: aMessage
+!
+METHOD Object
+print
+	self printString do: [ :c | c print ]
+!
+METHOD Object
+printNl
+	self print. Char newline print
+!
+METHOD Object
+question: text	| answer |
+	text print.
+	answer <- String input.
+	(answer notNil)
+		ifTrue: [ answer <- answer at: 1 ifAbsent: [ $n ] ].
+	^ answer = $y or: [ answer = $Y]
+!
+METHOD Object
+error: str
+		" print the message "
+	str printNl.
+		" then halt "
+	<19>
+!
+METHOD Object
+debug
+	<18>
+!
+METHOD Object
+primitiveFailed
+	self error: 'Primitive failed'
+!
+METHOD Object
+species
+	" By default, we re-instantiate ourselves as our own Class "
+	^ self class
+!
+METHOD Object
+hash
+	" Most objects should generate something based on their value "
+	^ self class printString hash
+!
+METHOD Object
+become: other
+	" Exchange identity with another object "
+	(Array with: self) elementsExchangeIdentityWith: (Array with: other)
+!
+METHOD Object
+doesNotUnderstand: aSel
+	self error: (self printString + ' (class '+
+		(self class printString) +
+		'): does not understand ' + aSel printString)
+!
+METHOD Object
+basicSize
+	<4 self>.
+	self primitiveFailed
+!
+METHOD Object
+subclassResponsibility
+	self error: 'Subclass responsibility'
+!
+METHOD Object
+basicDo: aBlock
+	^ self do: aBlock
+!
+COMMENT ---------Class-------------------
+METHOD Class
+name: n parent: c variables: v
+	" create a new class with the given characteristics "
+	name <- n.
+	parentClass <- c.
+	methods <- Dictionary new.
+	size <- v size + c size.
+	variables <- v.
+	package <- nil.
+!
+METHOD Class
+size
+	^ size
+!
+METHOD Class
+superclass
+	^ parentClass
+!
+METHOD Class
+super
+  ^parentClass
+!
+METHOD Class
+parent
+  ^parentClass
+!
+METHOD Class
+variables
+	^ variables
+!
+METHOD Class
+subclasses
+	self subclasses: 0
+!
+METHOD Class
+subclasses: indent
+	globals do: [ :obj |
+		((obj isKindOf: Class) and: [ obj superclass == self])
+			ifTrue: [
+				1 to: indent do: [:ignore| $  print ].
+				obj printNl.
+				obj subclasses: indent + 4 ] ]
+!
+METHOD Class
+listMethods
+	methods keysDo:
+		[ :name | name printNl ]
+!
+METHOD Class
+allMethods | allMethods |
+	parentClass isNil
+		ifTrue: [ allMethods <- Dictionary new ]
+		ifFalse: [ allMethods <- parentClass allMethods ].
+	methods binaryDo: [ :n :m | allMethods at: n put: m ].
+	^ allMethods
+!
+METHOD Class
+listAllMethods
+	self allMethods keysDo: [:n| n printNl ]
+!
+METHOD Class
+viewMethod: nm  | meth |
+	meth <- self allMethods at: nm
+		ifAbsent: [ ^ self error: 'no such method'].
+	meth text print.
+	^ ''
+!
+METHOD Class
+editMethod: nm	| meth text |
+	meth <- methods at: nm
+		ifAbsent: [ ^ self error: 'no such method'].
+	text <- meth text edit.
+	(self question: 'compile method?')
+		ifTrue: [ self addMethod: text ]
+!
+METHOD Class
+subclass: nm
+	^ self subclass: nm variables: (Array new: 0)
+		classVariables: (Array new: 0)
+!
+METHOD Class
+subclass: nm variables: v
+	^ self subclass: nm variables: v classVariables: (Array new: 0)
+!
+METHOD Class
+subclass: nm variables: v classVariables: cv | meta |
+	meta <- Class new name: ('Meta' + nm asString) asSymbol
+		parent: self class
+		variables: cv.
+	globals at: nm put: ( meta new name: nm
+		parent: self
+		variables: v ).
+	^ 'subclass created: ' + nm printString
+!
+METHOD Class
+addMethod	| text |
+	text <- ' ' edit.
+	(self question: 'compile method?')
+		ifTrue: [ self addMethod: text ]
+!
+METHOD Class
+addMethod: text | meth |
+	meth <- self parseMethod: text.
+	meth notNil ifTrue: [
+		methods at: meth name put: meth.
+		Method flushCache.
+		'ok' printNl.
+		^ meth
+	].
+	^ nil
+!
+METHOD Class
+removeMethod: methName
+	methods removeKey: methName ifAbsent: [
+		self error: 'Method not present: ' + (methName printString)
+	].
+	Method flushCache.
+!
+METHOD Class
+view: methodName
+		" print the text of the given method "
+	(methods at: methodName
+		ifAbsent: [ ^ self error: 'no such method'])
+			text print
+!
+METHOD Class
+parseMethod: text
+	^ (Parser new
+		text: text instanceVars: self instanceVariables) parse: self
+!
+METHOD Class
+new
+	" return a new instance of ourselves "
+	<7 self size>
+!
+METHOD Class
+basicNew
+	" Like new "
+	<7 self size>
+!
+METHOD Class
+instanceVariables	| names |
+		" return all our variable names "
+	parentClass notNil
+		ifTrue: [ names <- parentClass instanceVariables ]
+		ifFalse: [ names <- Array new: 0 ].
+	(variables isNil or: [ variables isEmpty ])
+		ifFalse: [ names <- names + variables ].
+	^ names
+!
+METHOD Class
+methods
+	" return the tree of methods "
+	^ methods
+!
+METHOD Class
+printString
+	" just return our name "
+	^ name printString
+!
+METHOD Class
+asString
+  ^self printString
+!
+METHOD Class
+isMeta
+	^ (name asString from: 1 to: 4) = 'Meta'
+!
+METHOD Class
+fileOut: f | tag |
+	self isMeta ifTrue: [
+		tag <- '=' + (name asString from: 5 to: 99)
+	] ifFalse: [
+		tag <- '!' + name asString
+	].
+	tag <- tag + String newline.
+	methods do: [:m|
+		f write: tag.
+		f write: (m text printString).
+		f write: ('!' + String newline)
+	]
+!
+METHOD Class
+fileOut | f |
+	f <- File openWrite: (name printString + '.st').
+	f isNil ifTrue: [ self error: 'File creation failed' ].
+	self isMeta ifFalse: [
+		self class fileOut: f
+	].
+	self fileOut: f.
+	f close
+!
+COMMENT -----------Undefined--------------
+METHOD MetaUndefined
+new
+	" there is only one nil object "
+	^ nil
+!
+METHOD Undefined
+printString
+	^ 'nil'
+!
+METHOD Undefined
+asString
+  ^'nil'
+!
+METHOD Undefined
+isNil
+	" yes, we are nil "
+	^ true
+!
+METHOD Undefined
+notNil
+	" no, we are not not-nil "
+	^ false
+!
+METHOD Undefined
+main	| command |
+	" initialize classes "
+	Char initialize.
+
+    self initSingletons.
+
+	" main execution loop "
+	[ '-> ' print. command <- String input. command notNil ]
+		whileTrue: [ command isEmpty
+			ifFalse: [ command doIt printNl ] ]
+!
+METHOD Undefined
+initSingletons
+  "This method initializes the instance variables of the singleton classes..."
+  GuiPrimitives resetInstance
+!
+COMMENT -----------Boolean--------------
+METHOD Boolean
+and: aBlock
+	^ self
+		ifTrue: [ aBlock value ]
+		ifFalse: [ false ]
+!
+METHOD Boolean
+or: aBlock
+	^ self
+		ifTrue: [ true ]
+		ifFalse: [ aBlock value ]
+!
+METHOD Boolean
+not
+	^ self
+		ifTrue: [ false ]
+		ifFalse: [ true ]
+!
+METHOD Boolean
+ifFalse: falseBlock ifTrue: trueBlock
+	^ self ifTrue: [ trueBlock  value ] ifFalse: [ falseBlock value ]
+!
+METHOD Boolean
+ifTrue: aBlock
+	^ self ifTrue: [ aBlock value ] ifFalse: [ nil ]
+!
+METHOD Boolean
+ifFalse: aBlock
+	^ self ifTrue: [ nil ] ifFalse: [ aBlock value ]
+!
+COMMENT -----------True--------------
+METHOD MetaTrue
+new
+	" there is only one true value "
+	^ true
+!
+METHOD True
+not
+	^ false
+!
+METHOD True
+asString
+  ^'true'
+!
+METHOD True
+printString
+  ^self asString
+!
+METHOD True
+ifTrue: trueBlock ifFalse: falseBlock
+	^ trueBlock value
+!
+METHOD True
+or: aBlock
+	^ true
+!
+METHOD True
+and: aBlock
+	^ aBlock value
+!
+COMMENT -----------False--------------
+METHOD MetaFalse
+new
+	" there is only one false value "
+  	^ false
+!
+METHOD False
+not
+	^ true
+!
+METHOD False
+asString
+  ^'false'
+!
+METHOD False
+printString
+  ^self asString
+!
+METHOD False
+ifTrue: trueBlock ifFalse: falseBlock
+	^ falseBlock value
+!
+METHOD False
+or: aBlock
+	^ aBlock value
+!
+METHOD False
+and: aBlock
+	^ false
+!
+COMMENT -----------Process--------------
+METHOD Process
+doExecute: ticks
+	<6 self ticks>
+!
+METHOD Process
+context: aContext
+	context <- aContext
+!
+METHOD Process
+context
+	^ context
+!
+METHOD Process
+execute | r |
+	r <- self doExecute: 0.
+	(r = 3) ifTrue: [
+		" Note: state field is filled in with arguments on error "
+		(state at: 1) print. ' (class ' print.
+		(state at: 1) class print. ') ' print.
+		'does not understand: ' print.  result printNl
+	].
+	(r = 4) ifTrue: [ ^ result ]
+		ifFalse: [ 'Backtrace:' printNl.
+			context backtrace. ^ nil ]
+!
+COMMENT -----------Context--------------
+METHOD Context
+setup: aMethod withArguments: a
+	method <- aMethod.
+	arguments <- Array new: 1.
+	bytePointer <- 0.
+	stack <- Array new: method stackSize.
+	stackTop <- 0.
+	temporaries <- Array new: method temporarySize.
+!
+METHOD Context
+perform: aMethod withArguments: a | proc |
+	self setup: aMethod withArguments: a.
+	proc <- Process new.
+	proc context: self.
+	^ proc execute
+!
+METHOD Context
+backtrace | narg |
+		" backtrace context calls "
+	narg <- 0.
+	method name print.
+	'(' print.
+	arguments do: [:a |
+		(narg > 0) ifTrue: [ ', ' print ].
+		a class print.
+		narg <- narg+1
+	].
+	')' printNl.
+	previousContext notNil
+		ifTrue: [ previousContext backtrace ]
+!
+METHOD Context
+previousContext
+	^ previousContext
+!
+COMMENT ---------- Blocks ------------
+METHOD Block
+argCount
+	self error: 'Incorrect argument passing to Block'
+!
+METHOD Block
+value
+	" start block execution "
+	<8 self>
+	(self argCount)
+!
+METHOD Block
+value: a
+	" start block execution "
+	<8 a self>
+	(self argCount)
+!
+METHOD Block
+value: a value: b
+	" start block execution "
+	<8 a b self>
+	(self argCount)
+!
+METHOD Block
+whileTrue: aBlock
+	self value ifTrue: [ aBlock value. ^ self whileTrue: aBlock ]
+!
+METHOD Block
+whileFalse: aBlock
+	self value ifFalse: [ aBlock value. ^ self whileFalse: aBlock ]
+!
+METHOD Block
+backtrace | narg |
+		" backtrace context calls "
+	'block from ' print. method name print.
+	'(' print.
+	narg <- 0.
+	arguments do: [:a |
+		(narg > 0) ifTrue: [', ' print ].
+		a class print.
+		narg <- narg+1
+	].
+	')' printNl.
+	previousContext notNil
+		ifTrue: [ previousContext backtrace ]
+!
+COMMENT -----------Magnitude--------------
+METHOD Magnitude
+<= arg
+	^ self < arg or: [ self = arg ]
+!
+METHOD Magnitude
+> arg
+	^ arg < self
+!
+METHOD Magnitude
+>= arg
+	^ (self > arg) or: [ self = arg ]
+!
+METHOD Magnitude
+min: arg
+	^ self < arg ifTrue: [ self ] ifFalse: [ arg ]
+!
+METHOD Magnitude
+max: arg
+	^ self < arg ifTrue: [ arg ] ifFalse: [ self ]
+!
+METHOD Magnitude
+between: low and: high
+	^ low <= self and: [ self <= high ]
+!
+COMMENT -----------Symbol--------------
+METHOD MetaSymbol
+intern: string
+	<23 string Symbol>
+!
+METHOD MetaSymbol
+new: fromString | sym |
+	^ symbols at: fromString
+		ifAbsent: [ symbols add: (self intern: fromString) ]
+!
+METHOD Symbol
+printString
+	<23 self String>
+!
+METHOD Symbol
+asString
+	^self printString
+!
+METHOD Symbol
+hash
+	^self printString hash
+!
+METHOD Symbol
+asSymbol
+	^self
+!
+METHOD Symbol
+= aString
+		" works with either symbol or string arguments "
+	^ self printString = aString printString
+!
+METHOD Symbol
+< arg
+		" works with either symbol or string arguments "
+	^ self printString < arg printString
+!
+COMMENT -----------Method--------------
+METHOD MetaMethod
+name: n byteCodes: b literals: l stackSize: s temporarySize: ts class: c text: t
+	| newMethod |
+	newMethod <- self new.
+	super in: newMethod at: 1 put: n.
+	super in: newMethod at: 2 put: b.
+	super in: newMethod at: 3 put: l.
+	super in: newMethod at: 4 put: s.
+	super in: newMethod at: 5 put: ts.
+	super in: newMethod at: 6 put: c.
+	super in: newMethod at: 7 put: t.
+	^ newMethod
+!
+METHOD MetaMethod
+flushCache
+	<34>.
+	self primitiveFailed
+!
+METHOD Method
+byteCodes
+	^ byteCodes
+!
+METHOD Method
+literals
+	^ literals
+!
+METHOD Method
+text
+	^ text
+!
+METHOD Method
+name
+	^ name
+!
+METHOD Method
+stackSize
+	^ stackSize
+!
+METHOD Method
+temporarySize
+	^temporarySize
+!
+METHOD Method
+args: argNames inst: instNames temp: tempNames
+	" Hook for recording symbolic debug "
+!
+COMMENT -----------Chars--------------
+METHOD MetaChar
+initialize
+	chars isNil ifTrue: [
+		chars <- Array new: 257.
+		1 to: 257 do: [:idx|
+			chars at: idx put: (Char basicNew: idx-1)
+		]
+	]
+!
+METHOD MetaChar
+basicNew: value
+	" create and initialize a new char "
+	^ self in: self new at: 1 put: value
+!
+METHOD MetaChar
+new: value
+	" return unique Char for ASCII value (or EOF) "
+	(value < 257) ifTrue: [ ^ chars at: value+1 ].
+
+	" otherwise build a custom Char "
+	^ self basicNew: value
+!
+METHOD MetaChar
+newline
+		" return newline character "
+	^ self new: 10
+!
+METHOD MetaChar
+cr
+  "return carriage return character"
+  ^self new: 13
+!
+METHOD MetaChar
+tab
+		" return tab character "
+	^ self new: 9
+!
+METHOD MetaChar
+eof
+		" return an EOF indication--not a true Char, but polymorphic "
+	^ self new: 256
+!
+METHOD MetaChar
+doInput
+	<9>
+!
+METHOD MetaChar
+input	| c |
+	" read a single char from input stream "
+	c <- self doInput.
+	(c notNil)
+		ifTrue: [ ^self new: c ]
+		ifFalse: [ ^nil ]
+!
+METHOD Char
+value
+		" return our ascii value as an integer "
+	^ value
+!
+METHOD Char
+hash
+	^ value
+!
+METHOD Char
+isDigit
+	^ self between: $0 and: $9
+!
+METHOD Char
+isLowerCase
+	^ self between: $a and: $z
+!
+METHOD Char
+isUpperCase
+	^ self between: $A and: $Z
+!
+METHOD Char
+isAlphabetic
+	^ self isLowerCase or: [ self isUpperCase ]
+!
+METHOD Char
+isEOF
+	^ value = 256
+!
+METHOD Char
+lowerCase
+	self isUpperCase
+		ifTrue: [ ^ Char new: (value - 65) + 97 ]
+!
+METHOD Char
+upperCase
+	self isLowerCase
+		ifTrue: [ ^ Char new: (value - 97) + 65 ]
+!
+METHOD Char
+isAlphanumeric
+		" are we a letter or a digit? "
+	^ self isAlphabetic or: [ self isDigit ]
+!
+METHOD Char
+isBlank
+		"spaces, tabs and newlines are all blank"
+	^ value = 32 or: [ value = 9 or: [ value = 10 or: [ value = 13 ] ] ]
+!
+METHOD Char
+print
+	<3 value>
+!
+METHOD Char
+asString
+	" return char as a string value "
+	^ String new: 1; at: 1 put: self
+!
+METHOD Char
+printString
+	^ String new: 2; at: 1 put: $$ ; at: 2 put: self
+!
+METHOD Char
+= aChar
+	^ value = aChar value
+!
+METHOD Char
+< aChar
+	^ value < aChar value
+!
+COMMENT ---------- Collection ------------
+METHOD Collection
+noElement
+	self error: 'Element not present'
+!
+METHOD Collection
+size	| tally |
+	tally <- 0.
+	self do: [:i | tally <- tally + 1].
+	^ tally
+!
+METHOD Collection
+isEmpty
+		" empty if there are no elements "
+	^ self size = 0
+!
+METHOD Collection
+at: value ifAbsent: exceptionBlock
+	self do: [ :element | element = value ifTrue: [ ^ element ]].
+	^ exceptionBlock value
+!
+METHOD Collection
+at: value
+	^ self at: value ifAbsent: [ self noElement ]
+!
+METHOD Collection
+includes: value
+	self at: value ifAbsent: [ ^ false ].
+	^ true
+!
+METHOD Collection
+asArray		| newArray index |
+	newArray <- Array new: self size.
+	index <- 1.
+	self do: [ :element | newArray at: index put: element.
+		index <- index + 1 ].
+	^ newArray
+!
+METHOD Collection
+from: argLow to: argHigh | ret idx size base low high |
+	low <- argLow max: 1.
+	high <- argHigh min: self size.
+	size <- (high - low) + 1.
+	(size < 1) ifTrue: [ ^ Array new: 0 ].
+	ret <- Array new: size.
+	base <- idx <- 1.
+	self do: [:elem|
+		((idx >= low) and: [idx <= high]) ifTrue: [
+			ret at: base put: elem.
+			base <- base + 1.
+			(base > size) ifTrue: [ ^ ret ]
+		].
+		idx <- idx + 1.
+	].
+	^ ret
+!
+METHOD Collection
+from: argLow
+	^ self from: argLow to: (self size)
+!
+METHOD Collection
+asString	| newString index |
+	newString <- String new: self size.
+	index <- 1.
+	self do: [ :element | newString at: index put: element.
+		index <- index + 1 ].
+	^ newString
+!
+METHOD Collection
+asList
+	^ List new addAll: self
+!
+METHOD Collection
+collect: transformBlock	| newList |
+	newList <- List new.
+	self do: [:element | newList addLast: (transformBlock value: element)].
+	^ newList
+!
+METHOD Collection
+select: testBlock	| newList |
+	newList <- List new.
+	self do: [:x | (testBlock value: x) ifTrue: [newList addLast: x]].
+	^ newList
+!
+METHOD Collection
+< aCollection
+	self do: [ :element | (aCollection includes: element)
+		ifFalse: [ ^ false ] ].
+	^ true
+!
+METHOD Collection
+= aCollection
+	^ self < aCollection and: [ aCollection < self ]
+!
+METHOD Collection
+reject: testBlock
+		" select the things that do not match predicate "
+	^ self select: [:x | (testBlock value: x) not ]
+!
+METHOD Collection
+printString | count res |
+	res <- super printString.
+	(self respondsTo: #do:) ifFalse: [ ^ res ].
+	count <- 0.
+	res <- res + ' ('.
+	self basicDo: [:elem| 
+		(count = 0) ifFalse: [ res <- res + ' ' ].
+		res <- res + elem printString.
+		count <- count + 1.
+		(count >= 20) ifTrue: [ ^ res + ' ...)' ]
+	].
+	^ res + ')'
+!
+METHOD Collection
+occurencesOf: obj | count |
+	count <- 0.
+	self do: [:o| (o = obj) ifTrue: [ count <- count + 1]].
+	^ count
+!
+METHOD Collection
+anyOne
+	self do: [:it| ^ it].
+	self emptyCollection
+!
+METHOD Collection
+emptyCollection
+	self error: (self class printString + ' is empty')
+!
+METHOD Collection
+do: aBlock
+	self subclassResponsibility
+!
+COMMENT ---------- Array ------------
+METHOD MetaArray
+new
+	^ self new: 0
+!
+METHOD MetaArray
+new: sz
+	<7 self sz>
+!
+METHOD MetaArray
+with: elemA | ret |
+	ret <- self new: 1.
+	ret at: 1 put: elemA.
+	^ ret
+!
+METHOD MetaArray
+with: elemA with: elemB | ret |
+	ret <- self new: 2.
+	ret at: 1 put: elemA.
+	ret at: 2 put: elemB.
+	^ ret
+!
+METHOD MetaArray
+with: elemA with: elemB with: elemC | ret |
+	ret <- self new: 3.
+	ret at: 1 put: elemA.
+	ret at: 2 put: elemB.
+	ret at: 3 put: elemC.
+	^ ret
+!
+METHOD Array
+badIndex
+	self error: 'array indexing error'
+!
+METHOD Array
+at: index
+	<24 self index>
+	(self includesKey: index) ifFalse: [ self badIndex ].
+	self primitiveFailed
+!
+METHOD Array
+at: index ifAbsent: exceptionBlock
+	<24 self index>
+	exceptionBlock value
+!
+METHOD Array
+includes: aValue
+	self do: [ :element | element = aValue ifTrue: [ ^ true ]].
+	^ false
+!
+METHOD Array
+indexOf: aValue
+	1 to: self size do: [:idx|
+		((self at: idx) == aValue) ifTrue: [ ^ idx ]
+	].
+	^ nil
+!
+METHOD Array
+indexOfVal: aValue
+	1 to: self size do: [:idx|
+		((self at: idx) = aValue) ifTrue: [ ^ idx ]
+	].
+	^ nil
+!
+METHOD Array
+highestIndexOf: aValue
+  | i |
+  i <- nil.
+  1 to: self size do: [ :idx |
+    ((self at: idx) = aValue) ifTrue: [ i <- idx ]
+  ]
+  ^i
+!
+METHOD Array
+copy
+	^ self asArray
+!
+METHOD Array
+with: newItem	| newArray size |
+	size <- self size.
+	newArray <- self class new: size + 1.
+	newArray replaceFrom: 1 to: size with: self.
+	newArray at: size + 1 put: newItem
+	^ newArray
+!
+METHOD Array
++ aValue	| size1 size2 newValue |
+	" catenate two strings together "
+	size1 <- self size.
+	size2 <- aValue size.
+	newValue <- self class new: (size1 + size2).
+	newValue replaceFrom: 1 to: size1 with: self.
+	newValue replaceFrom: size1+1 to: size1+size2 with: aValue.
+	^ newValue
+!
+METHOD Array
+size
+	" compute number of elements "
+	<4 self>
+!
+METHOD Array
+at: index put: value
+	<5 value self index>
+	(self includesKey: index) ifFalse: [ self badIndex ].
+	self primitiveFailed
+!
+METHOD Array
+do: aBlock
+	1 to: self size do: [:i | aBlock value: (self at: i)]
+!
+METHOD Array
+< arg		| selfsize argsize |
+	selfsize <- self size. argsize <- arg size.
+	1 to: (selfsize min: argsize)
+		do: [:i | (self at: i) ~= (arg at: i)
+			ifTrue: [ ^ (self at: i) < (arg at: i) ]].
+	^ selfsize < argsize
+!
+METHOD Array
+= anArray
+	self size = anArray size ifFalse: [ ^ false ].
+	1 to: self size do:
+		[:i | (self at: i) = (anArray at: i)
+			ifFalse: [ ^ false ]].
+	^ true
+!
+METHOD Array
+includesKey: index
+	^ index between: 1 and: self size
+!
+METHOD Array
+insert: value at: position | newArray newSize |
+	newSize <- self size + 1.
+	newArray <- self class new: newSize.
+	newArray replaceFrom: 1 to: position-1 with: self.
+	newArray at: position put: value.
+	newArray replaceFrom: position+1 to: newSize with:
+		self startingAt: position.
+	^ newArray
+!
+METHOD Array
+removeIndex: position  | newArray newSize |
+	newSize <- self size - 1.
+	newArray <- self class new: newSize.
+	newArray replaceFrom: 1 to: position-1 with: self.
+	newArray replaceFrom: position to: newSize with: self
+		startingAt: position+1.
+	^ newArray
+!
+METHOD Array
+first
+	^self at: 1
+!
+METHOD Array
+from: low to: high | start stop size obj |
+	start <- low max: 0.
+	stop <- high min: self size.
+	size <- (stop + 1 - start) max: 0.
+	obj <- (self species) new: size.
+	1 to: size do: [ :i |
+		obj at: i put: (self at: start).
+		start <- start + 1 ].
+	^ obj
+!
+METHOD Array
+hash | sz |
+	sz <- self size.
+	(sz < 2) ifTrue: [
+		(sz = 1) ifTrue: [ ^ (self at: 1) hash + sz ].
+		^ 0
+	].
+	^ (self at: 1) hash + (self at: sz) hash
+!
+METHOD Array
+elementsExchangeIdentityWith: otherArray
+	<35 self otherArray>.
+	self primitiveFailed
+!
+METHOD Array
+replaceFrom: start to: stop with: replacement
+	^ self replaceFrom: start to: stop with: replacement startingAt: 1
+!
+METHOD Array
+replaceFrom: start to: stop with: replacement startingAt: repStart | base |
+	<38 start stop replacement repStart self>.
+	base <- repStart-1.
+	0 to: (stop - start) do: [:idx|
+		self at: (idx + start) put:
+			(replacement at: (idx + repStart))
+	]
+!
+COMMENT ---------- OrderedArray ------------
+METHOD OrderedArray
+add: value
+	^ self insert: value at: (self location: value)
+!
+METHOD OrderedArray
+includes: value | position |
+	position <- self location: value.
+	^ (position <= self size) and: [ value = (self at: position)]
+!
+METHOD OrderedArray
+location: value | low high mid |
+	low <- 1.
+	high <- self size + 1.
+	[ low < high ] whileTrue:
+		[ mid <- (low + high) quo: 2.
+		(self at: mid) < value
+			ifTrue: [ low <- mid + 1 ]
+			ifFalse: [ high <- mid ] ].
+	^ low
+!
+COMMENT ---------- ByteArrays ------------
+METHOD MetaByteArray
+new: size
+	<20 self size>
+!
+METHOD ByteArray
+basicAt: index
+	<21 self index>
+	^nil
+!
+METHOD ByteArray
+at: index
+	<21 self index>
+	(self includesKey: index) ifFalse: [ self badIndex ].
+	self primitiveFailed
+!
+METHOD ByteArray
+at: index ifAbsent: exceptionBlock
+	<21 self index>
+	exceptionBlock value
+!
+METHOD ByteArray
+at: index put: aValue
+	<22 aValue self index>
+	(self includesKey: index) ifFalse: [ self badIndex ].
+	self primitiveFailed
+!
+METHOD ByteArray
+asString | str sz |
+	sz <- self size.
+	str <- String new: sz.
+	1 to: sz do: [:i| str at: i put: ((self at: i) asChar)].
+	^ str
+!
+COMMENT ---------- Strings ------------
+METHOD MetaString
+new: size
+	<20 self size>
+!
+METHOD MetaString
+input	| value c nl |
+	" read a line from input "
+	value <- ''. nl <- Char newline.
+	[ c <- Char input.
+	  c isNil ifTrue: [ ^ nil ]. c ~= nl ] whileTrue:
+		[ value <- value + c asString ].
+	^ value
+!
+METHOD MetaString
+newline
+	^ Char newline asString
+!
+METHOD MetaString
+tab
+	^ Char tab asString
+!
+METHOD String
+edit
+	<105 self>
+!
+METHOD String
+break: separators  | words word |
+	" break string into words, using separators "
+	word <- ''.
+	words <- List new.
+	self do: [:c |
+		(separators includes: c)
+			ifTrue: [
+				(word size > 0) " found a word "
+					ifTrue: [ words addLast: word.
+							word <- '' ] ]
+			ifFalse: [ word <- word + c asString ] ].
+		" maybe a last word "
+	(word size > 0) ifTrue: [ words addLast: word ].
+	^ words
+!
+METHOD String
+collect: transformationBlock
+	^ (super collect: transformationBlock) asString
+!
+METHOD String
+reverse
+	^ self asList reverse asString
+!
+METHOD String
+select: testBlock
+	^ (super select: testBlock) asString
+!
+METHOD String
+printString
+	^ self
+!
+METHOD String
+asString
+  ^self
+!
+METHOD String
+printWidth: width | ret |
+	(self size >= width absolute) ifTrue: [ ^ self ].
+	ret <- self.
+	(width negative) ifTrue: [
+			(self size + 1) to: (width negated) do:
+				[:ignore| ret <- ' ' + ret].
+		]
+		ifFalse: [
+			(self size + 1) to: width do:
+				[:ignore| ret <- ret + ' ' ].
+		].
+	^ret
+!
+METHOD String
+asSymbol
+	^ Symbol new: self
+!
+METHOD String
+doIt	| meth |
+	meth <- Undefined parseMethod: 'doItCommand ^' + self.
+	^ meth notNil
+		ifTrue: [ ^ Context new
+			  perform: meth withArguments: (Array new: 1) ]
+!
+METHOD String
+basicAt: index
+	<21 self index>
+	^nil
+!
+METHOD String
+at: index
+	^self at: index ifAbsent: [ self badIndex ]
+!
+METHOD String
+at: index ifAbsent: exceptionBlock | c |
+	c <- self basicAt: index.
+	(c isNil)
+	     ifTrue: [ ^ exceptionBlock value ]
+	     ifFalse: [ ^ Char new: c ]
+!
+METHOD String
+basicAt: index put: value
+	<22 value self index>
+	^nil
+!
+METHOD String
+at: index put: aValue
+	(self basicAt: index put: aValue value) isNil ifTrue: [
+		self badIndex
+	]
+!
+METHOD String
+copy
+	" make a clone of ourself "
+	<23 self String>
+!
+METHOD String
+asNumber | val |
+	" parse a base-10 ASCII number, return nil on failure "
+	val <- 0.
+	self do: [:c|
+		c isDigit ifFalse: [^nil].
+		val <- (val * 10) + (c value - 48)
+	].
+	^val
+!
+METHOD String
+hash | sz |
+	sz <- self size.
+	(sz < 2) ifTrue: [
+		(sz = 1) ifTrue: [ ^ (self at: 1) value ].
+		^ 0
+	].
+	^ (self at: 1) value + (self at: sz) value
+!
+METHOD String
+lowerCase | ret c |
+	ret <- String new: (self size).
+	1 to: self size do: [:x|
+		c <- self at: x.
+		c isUpperCase ifTrue: [c <- c lowerCase].
+		ret at: x put: c
+	].
+	^ ret
+!
+METHOD String
+indexOf: val | c s |
+	" For non-strings, search scalar Array elements "
+	(val isKindOf: String) ifFalse: [ ^ super indexOf: val ].
+
+	" Otherwise look for substring match "
+	c <- val at: 1.
+	s <- val size.
+	1 to: (self size - s + 1) do: [:idx|
+		" Cheap check for initial char equality "
+		((self at: idx) = c) ifTrue: [
+			((self from: idx to: (idx + s - 1)) = val)
+				ifTrue: [ ^ idx ]
+		]
+	].
+	^ nil
+!
+COMMENT --------- List -----------
+METHOD MetaList
+with: elemA	| newList |
+	newList <- self new.
+	newList add: elemA.
+	^ newList
+!
+METHOD MetaList
+with: elemA with: elemB	| newList |
+	newList <- self new.
+	newList add: elemB.  newList add: elemA.
+	^ newList
+!
+METHOD MetaList
+with: elemA with: elemB with: elemC	| newList |
+	newList <- self new.
+	newList add: elemC.  newList add: elemB.  newList add: elemA.
+	^ newList
+!
+METHOD List
+add: anElement
+	elements <- Link value: anElement next: elements.
+	^ anElement
+!
+METHOD List
+addLast: anElement
+	elements isNil
+		ifTrue: [ self add: anElement]
+		ifFalse: [ elements addLast: anElement ].
+	^ anElement
+!
+METHOD List
+addAll: aCollection
+	aCollection do: [ :element | self addLast: element ]
+!
+METHOD List
++ aCollection
+	^ self addAll: aCollection
+!
+METHOD List
+copy
+	^ self asList
+!
+METHOD List
+badIndex
+	self error: 'Invalid List index'
+!
+METHOD List
+findLink: index ifAbsent: aBlock | idx link |
+	link <- elements.
+	idx <- index.
+	link isNil ifTrue: [ ^ aBlock value ].
+	[ link notNil ] whileTrue: [
+		idx <- idx-1.
+		(idx = 0) ifTrue: [ ^ link ].
+		link <- link next
+	].
+	^ aBlock value
+!
+METHOD List
+at: index | link |
+	link <- self findLink: index ifAbsent: [ self badIndex ].
+	^ link value
+!
+METHOD List
+at: index ifAbsent: aBlock | link |
+	link <- self findLink: index ifAbsent: [nil].
+	link isNil ifTrue: [ ^ aBlock value ].
+	^ link value
+!
+METHOD List
+at: index put: value | link |
+	link <- self findLink: index.
+	link value: value
+!
+METHOD List
+first
+	^ self at: 1
+!
+METHOD List
+isEmpty
+	^ elements isNil
+!
+METHOD List
+removeFirst
+	elements isNil
+		ifTrue: [ self emptyCollection ]
+		ifFalse: [ elements <- elements next ]
+!
+METHOD List
+remove: anElement
+	self remove: anElement
+		ifAbsent: [ self emptyCollection ]
+!
+METHOD List
+reverse | newList |
+	newList <- List new.
+	self do: [ :element | newList add: element ].
+	^ newList
+!
+METHOD List
+remove: anElement ifAbsent: exceptionBlock
+	elements isNil
+		ifTrue: [ exceptionBlock value ]
+		ifFalse: [ elements remove: anElement ifAbsent: exceptionBlock ]
+!
+METHOD List
+do: aBlock
+	^ elements notNil ifTrue: [ elements do: aBlock ]
+!
+METHOD List
+reverseDo: aBlock
+	^ elements notNil ifTrue: [ elements reverseDo: aBlock ]
+!
+METHOD List
+select: testBlock | newList |
+	newList <- List new.
+	self reverseDo: [:element | (testBlock value: element)
+		ifTrue: [ newList add: element ] ].
+	^ newList
+!
+COMMENT ---------- Dictionary ------------
+METHOD MetaDictionary
+test
+  | obj |
+  obj <- Dictionary new.
+  obj at: #Hello put: 'World!'.
+  obj at: #foo put: #bar.
+
+  (obj printString) printNl.
+!
+METHOD MetaDictionary
+new | newDict |
+	newDict <- super new.
+	self in: newDict at: 1 put: (OrderedArray new: 0).
+	self in: newDict at: 2 put: (Array new: 0).
+	^ newDict
+!
+METHOD Dictionary
+noKey
+	self error: 'key not found in dictionary lookup'
+!
+METHOD Dictionary
+at: key
+	^ self at: key ifAbsent: [ self noKey ]
+!
+METHOD Dictionary
+at: key put: value | position |
+	position <- keys location: key.
+	(position <= keys size and: [ key = (keys at: position)])
+		ifTrue: [ values at: position put: value ]
+		ifFalse: [ keys <- keys insert: key at: position.
+			values <- values insert: value at: position ].
+	^ value
+!
+METHOD Dictionary
+at: key ifAbsent: exceptionBlock | position |
+	position <- keys location: key.
+	((position <= keys size) and: [ key = (keys at: position)])
+		ifTrue: [ ^ values at: position ]
+		ifFalse: [ ^ exceptionBlock value ]
+!
+METHOD Dictionary
+binaryDo: aBlock
+	1 to: keys size do:
+		[:i | aBlock value: (keys at: i) value: (values at: i) ]
+!
+METHOD Dictionary
+keysDo: aBlock
+	1 to: keys size do: [:i| aBlock value: (keys at: i)]
+!
+METHOD Dictionary
+keysAsArray | i ret |
+	ret <- Array new: keys size.
+	1 to: keys size do: [:i| ret at: i put: (keys at: i)].
+	^ ret
+!
+METHOD Dictionary
+isEmpty
+	^ keys isEmpty
+!
+METHOD Dictionary
+do: aBlock
+	values do: aBlock
+!
+METHOD Dictionary
+removeKey: key ifAbsent: exceptionBlock | position |
+	position <- keys location: key.
+	(position <= keys size and: [ key = (keys at: position) ])
+		ifTrue: [ keys <- keys removeIndex: position.
+			values <- values removeIndex: position]
+		ifFalse: [ ^ exceptionBlock value ]
+!
+METHOD Dictionary
+removeKey: key
+	^ self removeKey: key ifAbsent: [ self noKey ]
+!
+METHOD Dictionary
+printString | count res |
+	res <- self class printString + ' ('.
+	count <- 0.
+	self binaryDo: [:k :elem| 
+		(count = 0) ifFalse: [ res <- res + ', ' ].
+		res <- res + (k printString + ' -> ' + elem printString).
+		count <- count + 1.
+		(count >= 20) ifTrue: [ ^ res + ', ...)' ]
+	].
+	^ res + ')'
+!
+METHOD Dictionary
+add: anAssoc
+	self at: anAssoc key put: anAssoc value
+!
+COMMENT ---------- Set ------------
+METHOD MetaSet
+new: size | ret |
+	ret <- super new.
+	self in: ret at: 1 put: (Array new: size).
+	self in: ret at: 2 put: size.
+	^ ret
+!
+METHOD MetaSet
+with: objA | ret |
+	ret <- self new.
+	ret add: objA.
+	^ ret
+!
+METHOD MetaSet
+with: objA with: objB | ret |
+	ret <- self new.
+	ret add: objA. ret add: objB.
+	^ ret
+!
+METHOD MetaSet
+with: objA with: objB with: objC | ret |
+	ret <- self new.
+	ret add: objA. ret add: objB. ret add: objC.
+	^ ret
+!
+METHOD MetaSet
+new
+	^ self new: 10
+!
+METHOD Set
+size | tally |
+	tally <- 0.
+	members do: [:elem| elem notNil ifTrue: [ tally <- tally + 1 ] ].
+	^ tally
+!
+METHOD Set
+grow | bigger old oldsize |
+	" Re-create ourselves in place with a new, bigger storage "
+	old <- members.
+	members <- Array new: (old size + growth).
+
+	" Re-insert each existing Set member "
+	old do: [:elem| self add: elem]
+!
+METHOD Set
+compare: t and: e
+	^ t = e
+!
+METHOD IdentitySet
+compare: t and: e
+	^ t == e
+!
+METHOD Set
+location: elem | pos start t |
+	start <- pos <- (elem hash rem: members size) + 1.
+	[ true ] whileTrue: [
+		" Return this position if we match, or have reached
+		  a nil slot. "
+		t <- members at: pos.
+		((t isNil) or: [self compare: t and: elem]) ifTrue: [
+			^ pos
+		].
+
+		" Advance to next slot, circularly "
+		pos <- pos + 1.
+		(pos > members size) ifTrue: [
+			pos <- 1
+		].
+
+		" Return nil if we have scanned the whole Set "
+		(pos = start) ifTrue: [ ^ nil ]
+	]
+!
+METHOD Set
+add: elem | pos |
+	" Find the appropriate slot... if none, need to grow the Set "
+	pos <- self location: elem.
+	pos isNil ifTrue: [
+		self grow.
+		^ self add: elem
+	].
+
+	" If the slot is nil, this is a new entry which we put in place now.
+	  If it wasn't nil, we still re-store it so that if it's an
+	  Association, the value portion will be updated. "
+	members at: pos put: elem.
+	^ elem
+!
+METHOD Set
+rehash: start | pos elem |
+	pos <- start.
+	[ true ] whileTrue: [
+		" Advance to next slot, ceasing when we reach our start "
+		pos <- pos + 1.
+		(pos > members size) ifTrue: [ pos <- 1 ].
+		(pos = start) ifTrue: [ ^ self ]
+
+		" If we reach a nil slot, there are no further rehash
+		  worries. "
+		elem <- members at: pos.
+		elem isNil ifTrue: [ ^ self ].
+
+		" Nil out the slot, and then re-insert the element "
+		members at: pos put: nil.
+		self add: elem
+	]
+!
+METHOD Set
+remove: elem ifAbsent: aBlock | pos |
+	" If not found, return error "
+	pos <- self location: elem.
+	((pos isNil) or: [(members at: pos) isNil]) ifTrue: [
+		aBlock value
+	].
+
+	" Remove our element from the Set "
+	members at: pos put: nil.
+
+	" Re-hash all that follow "
+	self rehash: pos.
+
+	^ elem
+!
+METHOD Set
+remove: elem
+	^ self remove: elem ifAbsent: [self noElement ]
+!
+METHOD Set
+do: aBlock
+	members do: [:elem| elem notNil ifTrue: [ aBlock value: elem ]]
+!
+METHOD Set
+at: value ifAbsent: aBlock | pos |
+	pos <- self location: value.
+	((pos isNil) or: [ (members at: pos) isNil ]) ifTrue: [
+		^ aBlock value
+	].
+	^ value
+!
+METHOD Set
+indexOf: value
+	^ self at: value ifAbsent: [ nil ]
+!
+COMMENT ---------- Number ------------
+METHOD MetaNumber
+new
+	" can't create this way, return zero "
+	^ 0
+!
+METHOD Number
+negative
+	^self < 0
+!
+METHOD Number
+absolute
+	(self negative) ifTrue: [ ^ self negated ]
+!
+METHOD Number
+negated
+	^0-self
+!
+METHOD Number
+factorial
+	self <= 1 ifTrue: [ ^ 1 ]
+	ifFalse: [ ^ (self - 1) factorial * self ]
+!
+METHOD Number
+asDigit
+	(self < 10) ifTrue:
+		[ ^(Char new: (self asSmallInt + 48)) asString ].
+	^(Char new: (self asSmallInt + 55)) asString
+!
+METHOD Number
+printWidth: width base: base | res n dig wasNeg wide |
+	res <- ''.
+	(self negative) ifTrue: [
+		wasNeg <- true.
+		wide <- width-1.
+		n <- self negated
+	] ifFalse: [
+		wasNeg <- false.
+		wide <- width.
+		n <- self
+	].
+	[true] whileTrue: [
+		res <- ((n rem: base) asDigit) + res.
+		n <- n quo: base.
+		(n = 0) ifTrue: [
+			((res size)+1) to: wide do: [:ignore|
+				res <- '0' + res
+			].
+			wasNeg ifTrue: [ res <- '-' + res ].
+			^res
+		]
+	]
+!
+METHOD Number
+printWidth: width
+	^self printWidth: width base: 10
+!
+METHOD Number
+printString
+	^self printWidth: 1 base: 10
+!
+METHOD Number
+to: limit
+	^ Interval from: self to: limit step: 1
+!
+METHOD Number
+to: limit by: step
+	^ Interval from: self to: limit step: step
+!
+METHOD Number
+to: limit do: aBlock  | i |
+		" optimize arithmetic loops "
+	i <- self.
+	[ i <= limit ] whileTrue: [ aBlock value: i. i <- i + 1 ]
+!
+METHOD Number
+to: limit by: step do: aBlock  | i |
+	i <- self.
+  i <= limit
+    ifTrue:  [ [ i <= limit ] whileTrue: [ aBlock value: i. i <- i + step ] ]
+    ifFalse: [ [ i >= limit ] whileTrue: [ aBlock value: i. i <- i + step ] ]
+!
+METHOD Number
+overflow
+	self error: 'Numeric overflow'
+!
+METHOD Number
+bitAnd: arg
+	^ (self asSmallInt bitAnd: arg)
+!
+METHOD Number
+bitOr: arg
+	^ (self asSmallInt bitOr: arg)
+!
+METHOD Number
+bitShift: arg
+	^ (self asSmallInt bitShift: arg)
+!
+METHOD Number
+atRandom
+	" Return random number from 1 to self "
+	(self < 2) ifTrue: [ ^ self ].
+	^ ((1 to: self) atRandom)
+!
+METHOD Number
+asChar
+	^ Char new: (self asSmallInt)
+!
+COMMENT ---------- SmallInt ------------
+METHOD MetaSmallInt
+atRandom
+	" Set up seed one time.  TBD: init from something external;
+	  getpid() or time() "
+	seed isNil ifTrue: [ seed <- 17 ].
+
+	" Rotate the random number generator. "
+	seed <- ((seed * 1103515245 + 12345) truncSmallInt)
+		bitAnd: 268435455.
+	^ seed
+!
+METHOD SmallInt
+asSmallInt
+	^self
+!
+METHOD SmallInt
+truncSmallInt
+	^self
+!
+METHOD SmallInt
+asInteger
+	^Integer new: self
+!
+METHOD SmallInt
+quo: arg
+	<11 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self quo: arg asSmallInt].
+	(0 = arg) ifTrue: [^ self error: 'division by zero'].
+	self primitiveFailed
+!
+METHOD SmallInt
+rem: arg
+	<12 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self rem: arg asSmallInt].
+	(0 = arg) ifTrue: [^ self error: 'division by zero'].
+	self primitiveFailed
+!
+METHOD SmallInt
++ arg
+	<10 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self + arg asSmallInt].
+	self primitiveFailed
+!
+METHOD SmallInt
+/ arg
+	^self quo: arg
+!
+METHOD SmallInt
+* arg
+	<15 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self * arg asSmallInt].
+	self primitiveFailed
+!
+METHOD SmallInt
+- arg
+	<16 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self - arg asSmallInt].
+	self primitiveFailed
+!
+METHOD SmallInt
+< arg
+	<13 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self < arg asSmallInt].
+	self primitiveFailed
+!
+METHOD SmallInt
+= arg
+	<14 self arg>
+	(arg isMemberOf: SmallInt) ifFalse: [^self = arg asSmallInt].
+	self primitiveFailed
+!
+METHOD SmallInt
+hash
+	^ self
+!
+METHOD SmallInt
+bitOr: arg
+	<36 self arg>.
+	^ (self bitOr: arg asSmallInt)
+!
+METHOD SmallInt
+bitAnd: arg
+	<37 self arg>.
+	^ (self bitAnd: arg asSmallInt)
+!
+METHOD SmallInt
+bitShift: arg
+	<39 self arg>.
+	(arg isKindOf: SmallInt) ifTrue: [ self overflow ].
+	^ (self bitShift: arg asSmallInt)
+!
+COMMENT ---------- Integer ------------
+METHOD MetaInteger
+new: low
+	<32 low>
+	low <- low asSmallInt.
+	<32 low>
+	self primitiveFailed
+!
+METHOD Integer
+asInteger
+	^self
+!
+METHOD Integer
+asSmallInt
+	<33 self>.
+	self overflow
+!
+METHOD Integer
+truncSmallInt
+	<40 self>.
+	self primitiveFailed
+!
+METHOD Integer
+hash
+	<33 self>.
+	^ (self rem: 65536) asSmallInt
+!
+METHOD Integer
+quo: arg
+	<25 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self quo: arg asInteger].
+	(0 = arg) ifTrue: [^ self error: 'division by zero'].
+	self primitiveFailed
+!
+METHOD Integer
+rem: arg
+	<26 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self rem: arg asInteger].
+	(0 = arg) ifTrue: [^ self error: 'division by zero'].
+	self primitiveFailed
+!
+METHOD Integer
++ arg
+	<27 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self + arg asInteger].
+	self primitiveFailed
+!
+METHOD Integer
+* arg
+	<28 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self * arg asInteger].
+	self primitiveFailed
+!
+METHOD Integer
+- arg
+	<29 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self - arg asInteger].
+	self primitiveFailed
+!
+METHOD Integer
+< arg
+	<30 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self < arg asInteger].
+	self primitiveFailed
+!
+METHOD Integer
+= arg
+	<31 self arg>
+	(arg isMemberOf: Integer) ifFalse: [^self = arg asInteger].
+	self primitiveFailed
+!
+COMMENT ---------- Nodes ------------
+METHOD MetaNode
+new: value
+	" creation, left left and right empty "
+	^ self in: self new at: 1 put: value
+!
+METHOD Node
+do: aBlock
+	left notNil ifTrue: [ left do: aBlock ].
+	aBlock value: value.
+	^ right notNil ifTrue: [ right do: aBlock ]
+!
+METHOD Node
+reverseDo: aBlock
+	right notNil ifTrue: [ right do: aBlock ].
+	aBlock value: value.
+	left notNil ifTrue: [ left do: aBlock ]
+!
+METHOD Node
+first
+	left notNil
+		ifTrue: [ ^ left first ]
+		ifFalse: [ ^ value ]
+!
+METHOD Node
+removeFirst
+	left notNil
+		ifTrue: [ left <- left removeFirst. ^ self ]
+		ifFalse: [ ^ right ]
+!
+METHOD Node
+add: anElement
+	value < anElement
+		ifTrue: [ right notNil
+			ifTrue: [ right add: anElement ]
+			ifFalse: [ right <- Node new: anElement ] ]
+		ifFalse: [ left notNil
+			ifTrue: [ left add: anElement ]
+			ifFalse: [ left <- Node new: anElement ] ]
+!
+METHOD Node
+remove: key ifAbsent: exceptionBlock
+	value = key
+		ifTrue: [ right notNil
+			ifTrue: [ value <- right first.
+			right <- right removeFirst.
+			^ self ]
+			ifFalse: [ ^ left ] ].
+	value < key
+		ifTrue: [ right notNil
+			ifTrue: [ right <- right remove: key ifAbsent: exceptionBlock ]
+			ifFalse: [ ^ exceptionBlock value ] ]
+		ifFalse: [ left notNil
+			ifTrue: [ left <- left removeL key ifAbsent: exceptionBlock ]
+			ifFalse: [ ^ exceptionBlock value ] ]
+!
+METHOD Node
+value
+	^ value
+!
+METHOD Node
+at: key ifAbsent: exceptionBlock
+	value = key ifTrue: [ ^ value ].
+	value < key
+		ifTrue: [ right notNil
+			ifTrue: [ ^ right at: key ifAbsent: exceptionBlock ]
+			ifFalse: [ ^ exceptionBlock value ] ]
+		ifFalse: [ left notNil
+			ifTrue: [ ^ left at: key ifAbsent: exceptionBlock ]
+			ifFalse: [ ^ exceptionBlock value ] ]
+!
+COMMENT ---------- Intervals ------------
+METHOD MetaInterval
+from: l to: h step: s | newInterval |
+	newInterval <- self in: self new at: 1 put: l.
+	self in: newInterval at: 2 put: h.
+	self in: newInterval at: 3 put: s.
+	^ newInterval
+!
+METHOD Interval
+do: aBlock	| current |
+	current <- low.
+	(step < 0)
+		ifTrue: [
+			[ current >= high ] whileTrue:
+				[ aBlock value: current.
+				current <- current + step ] ]
+		ifFalse: [
+			[ current <= high ] whileTrue:
+				[ aBlock value: current.
+				current <- current + step ] ]
+!
+METHOD Interval
+low: l
+	low <- l
+!
+METHOD Interval
+high: h
+	high <- h
+!
+METHOD Interval
+low
+	^ low
+!
+METHOD Interval
+high
+	^ high
+!
+METHOD Interval
+includes: val
+	" Check within range first "
+	((val < low) or: [val > high]) ifTrue: [ ^ false ].
+	" Then check if in equivalence class of interval "
+	^ ((val - low) rem: step) = 0
+!
+METHOD Interval
+printString | s |
+	s <- (self class printString) + ' <' +
+		low printString + '..' + high printString.
+	(step ~= 1) ifTrue: [ s <- s + ' by ' + step printString ].
+	^ s + '>'
+!
+METHOD Interval
+atRandom | ret |
+	" Return a random element from our sequence "
+	ret <- (SmallInt atRandom) rem: ((high - low + 1) quo: step).
+	^ low + (ret * step)
+!
+COMMENT ---------- Links ------------
+METHOD MetaLink
+value: v
+		" return a new link with given value field "
+		" and empty link field "
+	^ self in: self new at: 1 put: v
+!
+METHOD MetaLink
+value: v next: n	| new |
+		" return a new link with the given fields "
+	new <- self new.
+	self in: new at: 1 put: v.
+	self in: new at: 2 put: n.
+	^ new
+!
+METHOD Link
+value
+	^ value
+!
+METHOD Link
+value: val
+	value <- val
+!
+METHOD Link
+next
+	^ next
+!
+METHOD Link
+do: aBlock
+	aBlock value: value.
+	next notNil ifTrue: [ ^ next do: aBlock ]
+!
+METHOD Link
+remove: anElement ifAbsent: exceptionBlock
+	value = anElement
+		ifTrue: [ ^ next ]
+		ifFalse: [ next notNil
+			ifTrue: [ next <- next remove: anElement
+				ifAbsent: exceptionBlock. ^ self ]
+			ifFalse: [ ^ exceptionBlock value ] ]
+!
+METHOD Link
+reverseDo: aBlock
+	next notNil ifTrue: [ next reverseDo: aBlock ].
+	aBlock value: value
+!
+METHOD Link
+addLast: anElement
+	next notNil
+		ifTrue: [ ^ next addLast: anElement ]
+		ifFalse: [ next <- Link value: anElement ]
+!
+COMMENT ---------- Association ------------
+METHOD MetaAssociation
+key: k
+		"key is set once, value is resettable"
+	^ self in: self new at: 1 put: k
+!
+METHOD MetaAssociation
+key: k value: v | ret |
+		"key is set once, value is resettable"
+	ret <- self new.
+	self in: ret at: 1 put: k.
+	self in: ret at: 2 put: v.
+	^ ret
+!
+METHOD Association
+= k
+		"compare both with keys and associations"
+	(k class == Association)
+		ifTrue: [ ^ key = k key ]
+		ifFalse: [ ^ key = k ]
+!
+METHOD Association
+< k
+		"compare both with keys and associations"
+	(k class == Association)
+		ifTrue: [ ^ key < k key ]
+		ifFalse: [ ^ key < k ]
+!
+METHOD Association
+value: v
+	value <- v
+!
+METHOD Association
+value
+	^ value
+!
+METHOD Association
+key
+	^ key
+!
+METHOD Association
+hash
+	^ key hash
+!
+METHOD Association
+printString
+	^ '(' + key printString + ' -> ' + value printString + ')'
+!
+COMMENT ---------- Tree ------------
+METHOD Tree
+add: anElement
+	root isNil
+		ifTrue: [ root <- Node new: anElement ]
+		ifFalse: [ root add: anElement ].
+	^anElement
+!
+METHOD Tree
+addAll: aCollection
+	aCollection do: [:element| self add: element ]
+!
+METHOD Tree
+at: key ifAbsent: exceptionBlock
+	root isNil
+		ifTrue: [ ^ exceptionBlock value ]
+		ifFalse: [ ^ root at: key ifAbsent: exceptionBlock ]
+!
+METHOD Tree
+copy
+	^Tree new addAll: self
+!
+METHOD Tree
+collect: transformBlock | newTree |
+	newTree <- Tree new.
+	self do: [:element| newTree add: (transformBlock value: element)]
+	^newTree
+!
+METHOD Tree
+do: aBlock
+	root notNil ifTrue: [ root do: aBlock ]
+!
+METHOD Tree
+select: testBlock | newTree |
+	newTree <- Tree new.
+	self do: [:element|
+		(testBlock value: element)
+			ifTrue: [newTree add: element]
+	].
+	^newTree
+!
+METHOD Tree
+reverseDo: aBlock
+	root notNil ifTrue: [ root reverseDo: aBlock ]
+!
+METHOD Tree
+removeFirst
+	root isNIl ifTrue: [ self emptyCollection ].
+	root <- root removeFirst
+!
+METHOD Tree
+remove: key ifAbsent: exceptionBlock
+	root isNil
+		ifTrue: [ exceptionBlock value ]
+		ifFalse: [ root <- root remove: key ifAbsent: exceptionBlock ]
+!
+METHOD Tree
+first
+	root notNil
+		ifTrue: [ ^root first ]
+		ifFalse: [ self emptyCollection ]
+!
+METHOD Tree
+isEmpty
+	^ root isNil
+!
+COMMENT --------------file methods-----------------
+METHOD MetaFile
+test
+  | file |
+  file <- File openWrite: 'test.txt'.
+  file opened
+    ifTrue: [ 'opened!' printNl ]
+    ifFalse: [ 'not opened!' printNl. ^nil ].
+  file write: 'foo bar'.
+  file newline.
+  file close.
+  'Done!' printNl.
+!
+METHOD MetaFile
+doOpen: nm mode: mode
+	<100 nm mode>
+!
+METHOD MetaFile
+openRead: nm
+		" open new file for reading "
+	^ self in: (self new) at: 1 put: (self doOpen: nm mode: 'r')
+!
+METHOD MetaFile
+openWrite: nm
+		" open new file for writing "
+	^ self in: (self new) at: 1 put: (self doOpen: nm mode: 'w')
+!
+METHOD MetaFile
+open: nm mode: mode
+  ^self in: (self new) at: 1 put: (self doOpen: nm mode: mode)
+!
+METHOD MetaFile
+openUpdate: nm
+		" open new file for reading and writing "
+	^ self in: (self new) at: 1 put: (self doOpen: nm mode: 'r+')
+!
+METHOD MetaFile
+fileIn: nm | file |
+	file <- self openRead: nm.
+	file opened ifFalse: [ ^ self error: 'cannot open file ' + nm ].
+	file fileIn.
+	file close.
+	^ 'file in completed'
+!
+METHOD MetaFile
+image: nm | file |
+		" open a file, write the image, then close "
+	file <- self openWrite: nm.
+	file opened ifFalse: [ ^ self error: 'cannot open file ' + nm ].
+	file writeImage.
+	file close
+!
+METHOD File
+opened
+	^ fileID notNil
+!
+METHOD File
+close: id
+	<103 id>
+!
+METHOD File
+close
+		" close file, return file descriptor "
+	fileID notNil ifTrue: [
+		self close: fileID.
+		fileID <- nil
+	]
+!
+METHOD File
+writeImage
+		" save the current image in a file "
+	fileID notNil
+		ifTrue: [ <104 fileID> ]
+!
+METHOD File
+notOpened
+	self error: 'file is not open'
+!
+METHOD File
+writeCharValue: n
+	<102 fileID n>.
+	fileID isNil ifTrue: [ self notOpened ].
+	self primitiveFailed
+!
+METHOD File
+doRead
+	<101 fileID>.
+	fileID isNil ifTrue: [ self notOpened ].
+	self primitiveFailed
+!
+METHOD File
+readChar	| c |
+		" read a single character from a file "
+	c <- self doRead.
+	c notNil ifTrue: [ ^ Char new: c ].
+	^ c
+!
+METHOD File
+readLine	| value  c nl |
+	" read a line from input "
+	fileID isNil ifTrue: [ self error: 'cannot read from unopened file' ].
+	value <- ''.
+	nl <- Char newline.
+	[ c <- self doRead.
+	  c isNil ifTrue: [ ^ nil ].
+	  c <- Char new: c.
+	  c ~= nl ] whileTrue:
+		[ value <- value + c asString ].
+	^ value
+!
+METHOD File
+fileInDispatch: cmd | c |
+	" Immediate execte "
+	cmd = $+ ifTrue: [
+		self readLine doIt printNl.
+		^ self
+	].
+
+	" Method definition "
+	(cmd = $! or: [ cmd = $=]) ifTrue: [
+		self methodCommand: cmd = $!.
+		^ self
+	].
+
+	" Comment enclosed in quotes... find matching quote "
+	(cmd = $") ifTrue: [
+		[ c <- self readChar. c ~= $" ] whileTrue: [
+			" Consume chars until closing quote "
+			nil
+		].
+		^ self
+	].
+
+	" Blank line, just return to process next line "
+	(cmd = Char newline) ifTrue: [
+		^ self
+	].
+
+	" It is random chars (treat as comment--discard) "
+	self readLine
+!
+METHOD File
+fileIn		| cmd |
+	[ cmd <- self readChar. cmd notNil ] whileTrue: [
+		self fileInDispatch: cmd
+	]
+!
+METHOD File
+methodCommand: classCmd | name aClass text line |
+	name <- self readLine asSymbol.
+	aClass <- globals at: name ifAbsent: [ ^ self error:
+		'unknown class name in file-in: ' + name printString ].
+	text <- ''.
+	[ line <- self readLine.
+	  line isNil ifTrue: [ ^ self error:
+		'unexpected end of input during fileIn' ].
+	  line ~= '!'] whileTrue: [ text <- text + line + String newline ].
+	classCmd
+		ifTrue: [ aClass addMethod: text ]
+		ifFalse: [ aClass class addMethod: text ]
+!
+METHOD File
+at: idx
+	<108 fileID idx>.
+	self primitiveFailed
+!
+METHOD File
+write: buf size: count
+	<107 fileID buf count>.
+	self primitiveFailed
+!
+METHOD File
+write: buf
+	^ self write: buf size: (buf size)
+!
+METHOD File
+at: idx put: buf
+	self at: idx.
+	self write: buf size: buf size
+!
+METHOD File
+at: idx get: buf | size |
+	self at: idx.
+	size <- buf size.
+	<106 fileID buf size>
+!
+METHOD File
+at: idx size: count | buf res |
+	buf <- ByteArray new: count.
+	res <- self at: idx get: buf.
+	(res < count) ifTrue: [ buf <- buf from: 1 to: res ].
+	^ buf
+!
+METHOD File
+newline
+	^ self write: (String newline)
+!
+COMMENT --------------parser methods-----------------
+METHOD Parser
+text: aString instanceVars: anArray
+	text <- aString.
+	index <- 1.
+	lineNum <- 1.
+	argNames <- Array new: 1.
+	argNames at: 1 put: #self.
+	instNames <- anArray.
+	tempNames <- Array new: 0.
+	maxTemps <- 0
+!
+METHOD Parser
+parse: c with: encoderClass	| encoder meth name |
+	" note -- must call text:instanceVars: first "
+	errBlock <- [ ^ nil ].
+	self nextLex.
+	encoder <- encoderClass new.
+	name <- self readMethodName.
+	(c ~= Undefined) ifTrue: [
+		'Compiling ' print. c print. ':' print.
+		name print. '... ' print
+	].
+	encoder name: name.
+	self readMethodVariables.
+	self readBody compile: encoder block: false.
+	meth <- encoder method: maxTemps class: c text: text.
+	meth args: argNames inst: instNames temp: tempNames.
+	^ meth
+!
+METHOD Parser
+parse: c
+	^ self parse: c with: Encoder
+!
+METHOD Parser
+error: aString
+	'Compile error near line ' print.
+	lineNum printString print.
+	': ' print.
+	aString printNl.
+	errBlock value
+!
+METHOD Parser
+currentChar
+	^ text at: index ifAbsent: [ Char eof ]
+!
+METHOD Parser
+nextChar
+  | c |
+  c <- self currentChar.
+	(c = Char newline) ifTrue: [ lineNum <- lineNum + 1 ].
+	index <- index + 1.
+  (c = Char cr) ifTrue: [ ^self nextChar ]
+	^self currentChar
+!
+METHOD Parser
+nextLex	
+	self skipBlanks.
+	tokenType <- self currentChar.
+	tokenType isEOF   " end of input "
+		ifTrue: [ tokenType <- $  . token <- nil. ^ nil ].
+	tokenType isDigit ifTrue: [ ^ self lexInteger ].
+	tokenType isAlphabetic ifTrue: [ ^ self lexAlnum ].
+	^ self lexBinary
+!
+METHOD Parser
+skipBlanks  | cc |
+	cc <- self currentChar.
+	[ cc isBlank ] whileTrue: [ cc <- self nextChar ].
+	( cc = $" ) ifTrue: [ self skipComment ]
+!
+METHOD Parser
+skipComment  | cc |
+	[ cc <- self nextChar.
+	  cc isEOF ifTrue: [ ^ self error: 'unterminated comment'].
+	  cc ~= $" ] whileTrue: [ nil ].
+	self nextChar. self skipBlanks
+!
+METHOD Parser
+lexInteger	| start |
+	start <- index.
+	[ self nextChar isDigit ]
+		whileTrue: [ nil ].
+	token <- text from: start to: index - 1
+!
+METHOD Parser
+lexAlnum | cc start |
+	start <- index.
+	[ ((cc <- self nextChar) isAlphanumeric) or: [ cc = $: ] ]
+			whileTrue: [ nil ].
+		" add any trailing colons "
+	token <- text from: start to: index - 1
+!
+METHOD Parser
+lexBinary	| c d |
+	c <- self currentChar.
+	token <- c asString.
+	d <- self nextChar.
+	(self charIsSyntax: c) ifTrue: [ ^ token ].
+	(((d isBlank
+		or: [ d isDigit])
+		or: [ d isAlphabetic ])
+		or: [ self charIsSyntax: d])
+			ifTrue: [ ^ token ].
+	token <- token + d asString.
+	self nextChar
+!
+METHOD Parser
+charIsSyntax: c
+	^ ('.()[]#^$;' includes: c) or: [ c = $' ]
+!
+METHOD Parser
+readMethodName   | name |
+	self tokenIsName	" unary method "
+		ifTrue: [ name <- token. self nextLex. ^ name ].
+	self tokenIsBinary	" binary method "
+		ifTrue: [ name <- token. self nextLex.
+			self tokenIsName
+				ifFalse: [ self error: 'missing argument'].
+				self addArgName: token asSymbol.
+				self nextLex. ^ name ].
+	self tokenIsKeyword
+		ifFalse: [ self error: 'invalid method header'].
+	name <- ''.
+	[ self tokenIsKeyword ]
+		whileTrue: [ name <- name + token. self nextLex.
+			self tokenIsName
+				ifFalse: [ self error: 'missing argument'].
+				self addArgName: token asSymbol.
+				self nextLex ].
+	^ name
+!
+METHOD Parser
+addArgName: name
+	((instNames includes: name)
+		or: [ argNames includes: name ])
+		ifTrue: [ self error: 'doubly defined argument name: ' +
+			name asString].
+	argNames <- argNames with: name
+!
+METHOD Parser
+tokenIsName
+	tokenType isAlphabetic ifFalse: [ ^ false ].
+	^ (token at: token size) isAlphanumeric
+!
+METHOD Parser
+tokenIsKeyword
+	tokenType isAlphabetic ifFalse: [ ^ false ].
+	^ (token at: token size) = $:
+!
+METHOD Parser
+tokenIsBinary
+	(((token isNil
+		or: [ self tokenIsName])
+		or: [ self tokenIsKeyword])
+		or: [ self charIsSyntax: tokenType ]) ifTrue: [ ^ false ].
+	^ true
+!
+METHOD Parser
+readMethodVariables
+	tokenType = $| ifFalse: [ ^ nil ].
+	self nextLex.
+	[ self tokenIsName ]
+		whileTrue: [ self addTempName: token asSymbol. self nextLex ].
+	tokenType = $|
+		ifTrue: [ self nextLex ]
+		ifFalse: [ self error: 'illegal method variable declaration']
+!
+METHOD Parser
+addTempName: name
+	(((argNames includes: name)
+		or: [ instNames includes: name ] )
+		or: [ tempNames includes: name ] )
+		ifTrue: [ self error: 'doubly defined name '].
+	tempNames <- tempNames with: name.
+	maxTemps <- maxTemps max: tempNames size
+!
+METHOD Parser
+readBody | lnum |
+	lnum <- lineNum.
+	^ (BodyNode at: lnum) statements: self readStatementList
+!
+METHOD Parser
+readStatementList   | list |
+	list <- List new.
+	[ list add: self readStatement.
+	  tokenType notNil and: [ tokenType = $. ] ]
+		whileTrue: [ self nextLex.
+			(token isNil or: [ tokenType = $] ] )
+				ifTrue: [ ^ list ] ].
+	^ list
+!
+METHOD Parser
+readStatement | lnum |
+	tokenType = $^
+		ifTrue: [ lnum <- lineNum. self nextLex.
+			^ (ReturnNode at: lnum)
+				expression: self readExpression ].
+	^ self readExpression
+!
+METHOD Parser
+readExpression   | node lnum |
+	self tokenIsName ifFalse: [ ^ self readCascade: self readTerm ].
+	node <- self nameNode: token asSymbol. self nextLex.
+	self tokenIsArrow
+		ifTrue: [ node assignable
+				ifFalse: [ self error: 'illegal assignment'].
+			lnum <- lineNum.
+			self nextLex.
+			^ (AssignNode at: lnum) target:
+				node expression: self readExpression ].
+	^ self readCascade: node
+!
+METHOD Parser
+tokenIsArrow
+	(token isKindOf: String) ifFalse: [ ^ false ].
+	^ token = '<-'
+!
+METHOD Parser
+readTerm   | node lnum |
+	token isNil
+		ifTrue: [ self error: 'unexpected end of input' ].
+	tokenType = $(
+		ifTrue: [ self nextLex. node <- self readExpression.
+			tokenType = $)
+				ifFalse: [ self error: 'unbalanced parenthesis' ].
+			self nextLex. ^ node ].
+	tokenType = $[ ifTrue: [ ^ self readBlock ].
+	tokenType = $< ifTrue: [ ^ self readPrimitive ].
+	self tokenIsName
+		ifTrue: [ node <- self nameNode: token asSymbol.
+			self nextLex. ^ node ].
+	lnum <- lineNum.
+	^ (LiteralNode at: lnum) value: self readLiteral
+!
+METHOD Parser
+nameNode: name
+	" make a new name node "
+	name == #super
+		ifTrue: [ ^ (ArgumentNode at: lineNum) position: 0 ].
+	(1 to: tempNames size) do: [:i |
+		(name == (tempNames at: i))
+			ifTrue: [ ^ (TemporaryNode at: lineNum)
+				position: i ] ].
+	(1 to: argNames size) do: [:i |
+		(name == (argNames at: i))
+			ifTrue: [ ^ (ArgumentNode at: lineNum) position: i ] ].
+	(1 to: instNames size) do: [:i |
+		(name == (instNames at: i))
+			ifTrue: [ ^ (InstNode at: lineNum) position: i ] ].
+	^ (LiteralNode at: lineNum);
+		value: (globals at: name
+			ifAbsent: [ ^ self error:
+				'unrecognized name: ' + name printString ])
+!
+METHOD Parser
+readLiteral   | node |
+	tokenType = $$
+		ifTrue: [ node <- self currentChar.
+			self nextChar. self nextLex. ^ node ].
+	tokenType isDigit
+		ifTrue: [ ^ self readInteger ].
+	token = '-'
+		ifTrue: [ self nextLex. ^ self readInteger negated ].
+	tokenType = $'
+		ifTrue: [ ^ self readString ].
+	tokenType = $#
+		ifTrue: [ ^ self readSymbol ].
+	self error: 'invalid literal: <' + token + '>'
+!
+METHOD Parser
+readInteger  | value |
+	value <- token asNumber.
+	value isNil ifTrue: [ self error: 'integer expected' ].
+	self nextLex.
+	^ value
+!
+METHOD Parser
+readString  | first last cc |
+	first <- index.
+	[ cc <- self currentChar.
+	  cc isNil ifTrue: [ self error: 'unterminated string constant'].
+	  cc ~= $' ] whileTrue: [ index <- index + 1 ].
+	last <- index - 1.
+	self nextChar = $'
+		ifTrue: [ self nextChar.
+			^ (text from: first to: index - 2) + self readString ].
+	self nextLex.
+	^ text from: first to: last
+!
+METHOD Parser
+readSymbol   | cc |
+	cc <- self currentChar.
+	(cc isEOF or: [ cc isBlank])
+		ifTrue: [ self error: 'invalid symbol'].
+	cc = $( ifTrue: [ ^ self readArray ].
+	(self charIsSyntax: cc)
+		ifTrue: [ self error: 'invalid symbol'].
+	self nextLex.
+	cc <- Symbol new: token. self nextLex.
+	^ cc
+!
+METHOD Parser
+readArray	| value |
+	self nextChar. self nextLex. value <- Array new: 0.
+	[ tokenType ~= $) ]
+		whileTrue: [ value <- value with: self arrayLiteral ].
+	self nextLex.
+	^ value
+!
+METHOD Parser
+arrayLiteral	| node |
+	tokenType isAlphabetic
+		ifTrue: [ node <- Symbol new: token. self nextLex. ^ node ].
+	^ self readLiteral
+!
+METHOD Parser
+readPrimitive  | num args lnum |
+	lnum <- lineNum.
+	self nextLex.
+	num <- self readInteger.
+	args <- List new.
+	[ tokenType ~= $> ]
+		whileTrue: [ args add: self readTerm ].
+	self nextLex.
+	^ (PrimitiveNode at: lnum) number: num arguments: args
+!
+METHOD Parser
+readBlock    | stmts saveTemps lnum |
+	saveTemps <- tempNames.
+	lnum <- lineNum.
+	self nextLex.
+	tokenType = $:
+		ifTrue: [ self readBlockTemporaries ].
+	stmts <- self readStatementList.
+	tempNames <- saveTemps.
+	tokenType = $]
+		ifTrue: [ self nextLex.
+			^ (BlockNode at: lnum) statements: stmts
+				temporaryLocation: saveTemps size ]
+		ifFalse: [ self error: 'unterminated block']
+!
+METHOD Parser
+readBlockTemporaries
+	[ tokenType = $: ]
+		whileTrue: [ self currentChar isAlphabetic
+			ifFalse: [ self error: 'ill formed block argument'].
+			self nextLex.
+			self tokenIsName
+				ifTrue: [ self addTempName: token asSymbol ]
+				ifFalse: [ self error: 'invalid block argument list '].
+			self nextLex ].
+	tokenType = $|
+		ifTrue: [ self nextLex ]
+		ifFalse: [ self error: 'invalid block argument list ']
+!
+METHOD Parser
+readCascade: base   | node list |
+	node <- self keywordContinuation: base.
+	tokenType = $;
+		ifTrue: [ node <- (CascadeNode at: lineNum) head: node.
+			list <- List new.
+			[ tokenType = $; ]
+				whileTrue: [ self nextLex.
+					list add:
+						(self keywordContinuation: nil ) ].
+			node list: list ].
+	^ node
+!
+METHOD Parser
+keywordContinuation: base  | receiver name args lnum |
+	receiver <- self binaryContinuation: base.
+	self tokenIsKeyword
+		ifFalse: [ ^ receiver ].
+	name <- ''.
+	args <- List new.
+	lnum <- lineNum.
+	[ self tokenIsKeyword ]
+		whileTrue: [ name <- name + token. self nextLex.
+			args add:
+				(self binaryContinuation: self readTerm) ].
+	^ (MessageNode at: lnum) receiver:
+		receiver name: name asSymbol arguments: args
+!
+METHOD Parser
+binaryContinuation: base | receiver name lnum |
+	receiver <- self unaryContinuation: base.
+	[ self tokenIsBinary]
+		whileTrue: [ lnum <- lineNum.
+			name <- token asSymbol. self nextLex.
+			receiver <- (MessageNode at: lnum)
+				receiver: receiver name: name arguments:
+					(List with:
+						(self unaryContinuation: self readTerm)) ].
+	^ receiver
+!
+METHOD Parser
+unaryContinuation: base | receiver lnum |
+	receiver <- base.
+	[ self tokenIsName ]
+		whileTrue: [ lnum <- lineNum.
+			receiver <- (MessageNode at: lnum)
+				receiver: receiver name: token asSymbol
+					arguments: (List new).
+				self nextLex ].
+	^ receiver
+!
+METHOD MetaParserNode
+new
+	self error: 'Must use at: for creation'
+!
+METHOD MetaParserNode
+at: l | ret |
+	ret <- super new.
+	self in: ret at: 1 put: l.
+	^ ret
+!
+METHOD ParserNode
+isSuper
+	^ false
+!
+METHOD ParserNode
+isBlock
+	^ false
+!
+METHOD ParserNode
+assignable
+	^ false
+!
+METHOD ParserNode
+compile: encoder
+	encoder lineNum: lineNum
+!
+METHOD BodyNode
+statements: s
+	statements <- s
+!
+METHOD BodyNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	statements reverseDo:
+		[ :stmt | stmt compile: encoder block: inBlock.
+			encoder genHigh: 15 low: 5 " pop "].
+	encoder genHigh: 15 low: 1 " return self "
+!
+METHOD ReturnNode
+expression: e
+	expression <- e
+!
+METHOD ReturnNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	expression compile: encoder block: inBlock.
+	inBlock
+		ifTrue: [ encoder genHigh: 15 low: 3 " block return " ]
+		ifFalse: [ encoder genHigh: 15 low: 2 " stack return " ]
+!
+METHOD AssignNode
+target: t expression: e
+	target <- t.
+	expression <- e
+!
+METHOD AssignNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	expression compile: encoder block: inBlock.
+	target assign: encoder
+!
+METHOD LiteralNode
+value: v
+	value <- v
+!
+METHOD LiteralNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	value == nil ifTrue: [ ^ encoder genHigh: 5 low: 10 ].
+	value == true ifTrue: [ ^ encoder genHigh: 5 low: 11 ].
+	value == false ifTrue: [ ^ encoder genHigh: 5 low: 12 ].
+	(((value class == SmallInt) and:
+	 [value < 10]) and: [value negative not])
+		ifTrue: [ ^ encoder genHigh: 5 low: value ].
+	encoder genHigh: 4 low: (encoder genLiteral: value)
+!
+METHOD ArgumentNode
+position: p
+	position <- p
+!
+METHOD ArgumentNode
+isSuper
+	^ position = 0
+!
+METHOD ArgumentNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	position = 0
+		ifTrue: [ encoder genHigh: 2 low: 0 ]
+		ifFalse: [ encoder genHigh: 2 low: position - 1 ]
+!
+METHOD TemporaryNode
+position: p
+	position <- p
+!
+METHOD TemporaryNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	encoder genHigh: 3 low: position - 1
+!
+METHOD TemporaryNode
+assignable
+	^ true
+!
+METHOD TemporaryNode
+assign: encoder
+	encoder genHigh: 7 low: position - 1
+!
+METHOD InstNode
+position: p
+	position <- p
+!
+METHOD InstNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	encoder genHigh: 1 low: position - 1
+!
+METHOD InstNode
+assign: encoder
+	encoder genHigh: 6 low: position - 1
+!
+METHOD InstNode
+assignable
+	^ true
+!
+METHOD PrimitiveNode
+number: n arguments: a
+	number <- n.
+	arguments <- a.
+!
+METHOD PrimitiveNode
+compile: encoder block: inBlock | argsize |
+	argsize <- arguments size.
+	super compile: encoder.
+	encoder pushArgs: argsize.
+	arguments reverseDo: [ :a | a compile: encoder block: inBlock ].
+	encoder genHigh: 13 low: argsize.
+	encoder genCode: number.
+	encoder popArgs: argsize
+!
+METHOD BlockNode
+statements: s temporaryLocation: t
+	statements <- s.
+	temporaryLocation <- t
+!
+METHOD BlockNode
+compileInLine: encoder block: inBlock
+	statements reverseDo:
+		[ :stmt | stmt compile: encoder block: inBlock.
+			encoder genHigh: 15 low: 5 " pop top " ].
+	encoder backUp
+!
+METHOD BlockNode
+isBlock
+	^ true
+!
+METHOD BlockNode
+compile: encoder block: inBlock | patchLocation |
+	super compile: encoder.
+	encoder genHigh: 12 low: temporaryLocation.
+	patchLocation <- encoder genVal: 0.
+	self compileInLine: encoder block: true.
+	encoder genHigh: 15 low: 2. " return top of stack "
+	encoder patch: patchLocation
+!
+METHOD CascadeNode
+head: h
+	head <- h
+!
+METHOD CascadeNode
+list: l
+	list <- l
+!
+METHOD CascadeNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	head compile: encoder block: inBlock.
+	list reverseDo: [ :stmt |
+		encoder genHigh: 15 low: 4. " duplicate "
+		stmt compile: encoder block: inBlock.
+		encoder genHigh: 15 low: 5 "pop from stack " ]
+!
+METHOD MessageNode
+receiver: r name: n arguments: a
+	receiver <- r.
+	name <- n.
+	arguments <- a
+!
+METHOD MessageNode
+compile: encoder block: inBlock
+	super compile: encoder.
+	receiver isNil
+		ifTrue: [ ^ self cascade: encoder block: inBlock ].
+	((receiver isBlock and: [ self argumentsAreBlock ])
+		and: [name = #whileTrue: or: [ name = #whileFalse ] ] )
+		ifTrue: [ ^ self optimizeWhile: encoder block: inBlock ].
+	receiver compile: encoder block: inBlock.
+	receiver isSuper
+		ifTrue: [ ^ self sendToSuper: encoder block: inBlock ].
+	name = #isNil ifTrue: [ ^ encoder genHigh: 10 low: 0 ].
+	name = #notNil ifTrue: [ ^ encoder genHigh: 10 low: 1 ].
+	self compile2: encoder block: inBlock
+!
+METHOD MessageNode
+compile2: encoder block: inBlock
+	self argumentsAreBlock ifTrue: [
+		name = #ifTrue: ifTrue: [ ^ self compile: encoder
+				test: 8 constant: 10 block: inBlock ].
+		name = #ifFalse: ifTrue: [ ^ self compile: encoder
+				test: 7 constant: 10 block: inBlock ].
+		name = #and: ifTrue: [ ^ self compile: encoder
+				test: 8 constant: 12 block: inBlock ].
+		name = #or: ifTrue: [ ^ self compile: encoder
+				test: 7 constant: 11 block: inBlock ].
+		name = #ifTrue:ifFalse:
+			ifTrue: [ ^ self optimizeIf: encoder block: inBlock ].
+		].
+	self evaluateArguments: encoder block: inBlock.
+	name = '<' asSymbol ifTrue: [ ^ encoder genHigh: 11 low: 0].
+	name = '<=' asSymbol ifTrue: [ ^ encoder genHigh: 11 low: 1].
+	name = '+' asSymbol ifTrue: [ ^ encoder genHigh: 11 low: 2].
+	self sendMessage: encoder block: inBlock
+!
+METHOD MessageNode
+sendToSuper: encoder block: inBlock
+	self evaluateArguments: encoder block: inBlock.
+	encoder genHigh: 8 low: 1 + arguments size.
+	encoder genHigh: 15 low: 11.
+	encoder genCode: (encoder genLiteral: name)
+!
+METHOD MessageNode
+cascade: encoder block: inBlock
+	self evaluateArguments: encoder block: inBlock.
+	self sendMessage: encoder block: inBlock
+!
+METHOD MessageNode
+evaluateArguments: encoder block: inBlock
+	encoder pushArgs: 1 + arguments size.
+	arguments reverseDo: [ :arg |
+		arg compile: encoder block: inBlock ]
+!
+METHOD MessageNode
+sendMessage: encoder block: inBlock
+	encoder popArgs: arguments size.
+		" mark arguments, then send message "
+	encoder genHigh: 8 low: 1 + arguments size.
+	encoder genHigh: 9 low: (encoder genLiteral: name)
+!
+METHOD MessageNode
+argumentsAreBlock
+	arguments do: [ :arg | arg isBlock ifFalse: [ ^ false ]].
+	^ true
+!
+METHOD MessageNode
+optimizeWhile: encoder block: inBlock | start save |
+	start <- encoder currentLocation.
+	receiver compileInLine: encoder block: inBlock.
+	name = #whileTrue:	" branch if false/true "
+		ifTrue: [ encoder genHigh: 15 low: 8 ]
+		ifFalse: [ encoder genHigh: 15 low: 7 ].
+	save <- encoder genVal: 0.
+	arguments first compileInLine: encoder block: inBlock.
+	encoder genHigh: 15 low: 5. " pop from stack "
+	encoder genHigh: 15 low: 6. " branch "
+	encoder genVal: start. " branch target "
+	encoder patch: save.
+	encoder genHigh: 5 low: 10  " push nil "
+!
+METHOD MessageNode
+compile: encoder test: t constant: c block: inBlock | save ssave |
+	super compile: encoder.
+	encoder genHigh: 15 low: t.  " branch test "
+	save <- encoder genVal: 0.
+	arguments first compileInLine: encoder block: inBlock.
+	encoder genHigh: 15 low: 6.  " branch "
+	ssave <- encoder genVal: 0.
+	encoder patch: save.
+	encoder genHigh: 5 low: c.  " push constant "
+	encoder patch: ssave
+!
+METHOD MessageNode
+optimizeIf: encoder block: inBlock | save ssave |
+	encoder genHigh: 15 low: 7.  " branch if true test "
+	save <- encoder genVal: 0.
+	arguments first compileInLine: encoder block: inBlock.
+	arguments removeFirst.
+	encoder genHigh: 15 low: 6.  " branch "
+	ssave <- encoder genVal: 0.
+	encoder patch: save.
+	arguments first compileInLine: encoder block: inBlock.
+	encoder patch: ssave
+!
+METHOD Encoder
+name: n
+	name <- n asSymbol.
+	byteCodes <- ByteArray new: 20.
+	index <- 0.
+	literals <- Array new: 0.
+	stackSize <- 0.
+	maxStack <- 1.
+!
+METHOD Encoder
+lineNum: l
+	" Don't care, except in DebugEncoder subclass "
+!
+METHOD Encoder
+pushArgs: n
+	stackSize <- stackSize + n.
+	maxStack <- stackSize max: maxStack
+!
+METHOD Encoder
+popArgs: n
+	stackSize <- stackSize - n.
+!
+METHOD Encoder
+genLiteral: aValue | idx |
+	idx <- literals indexOf: aValue.
+	idx notNil ifTrue: [ ^ idx - 1 ].
+	literals <- literals with: aValue.
+	^ literals size - 1
+!
+METHOD Encoder
+genHigh: high low: low
+	(low >= 16)
+		ifTrue: [ self genHigh: 0 low: high. self genCode: low ]
+		ifFalse: [ self genCode: high * 16 + low ]
+!
+METHOD Encoder
+genCode: byte
+	index <- index + 1.
+	(index >= byteCodes size)
+		ifTrue: [ self expandByteCodes].
+	byteCodes at: index put: byte.
+	^ index
+!
+METHOD Encoder
+genVal: byte
+	self genCode: (byte rem: 256).
+	self genCode: (byte quo: 256).
+	^ index-1
+!
+METHOD Encoder
+expandByteCodes	| newarray size |
+	size <- byteCodes size.
+	newarray <- ByteArray new: size + 8.
+	1 to: size do: [:i | newarray at: i put: (byteCodes at: i)].
+	byteCodes <- newarray
+!
+METHOD Encoder
+patch: loc
+		" patch a goto from a block "
+	byteCodes at: loc put: (index rem: 256).
+	byteCodes at: (loc + 1) put: (index quo: 256)
+!
+METHOD Encoder
+currentLocation
+	^ index
+!
+METHOD Encoder
+backUp
+	" back up one instruction "
+	index <- index - 1
+!
+METHOD Encoder
+method: maxTemps class: c text: text
+	^ Method name: name byteCodes: byteCodes literals: literals
+		stackSize: maxStack temporarySize: maxTemps class: c
+		text: text
+!
+METHOD MetaFFI
+new
+  | obj |
+  obj <- super new.
+  obj init.
+  ^obj
+!
+METHOD MetaFFI
+new: theName
+  | obj |
+  obj <- super new.
+  obj init.
+  obj open: theName.
+  ^obj
+!
+METHOD MetaFFI
+test
+  | obj |
+  obj <- FFI new: 'msvcrt.dll'.
+  obj add: #printf.
+  obj call: #printf arg: ('Hello%s' + String newline) arg: ' World!'.
+  obj call: #printf arg: ('The number is: %d' + String newline) arg: 12345.
+  obj close.
+  ^obj
+!
+METHOD FFI
+init
+  functions <- Dictionary new
+!
+METHOD FFI
+name: theName
+  | path |
+  path <- Pathname new: theName.
+  path replaceOrAddSuffix: System suffixForDLL.
+  name <- path path.
+!
+METHOD FFI
+name
+  ^name
+!
+METHOD FFI
+handle: theHandle
+  handle <- theHandle
+!
+METHOD FFI
+handle
+  ^handle
+!
+METHOD FFI
+functions: theFunctions
+  functions <- theFunctions
+!
+METHOD FFI
+functions
+  ^functions
+!
+METHOD FFI
+resolveFunction: theName
+  ^<233 handle (theName printString)>
+!
+METHOD FFI
+add: theName
+  | func |
+  func <- self resolveFunction: theName.
+  functions at: theName put: func.
+!
+METHOD FFI
+at: theName
+  ^functions at: theName
+!
+METHOD FFI
+openPrim
+  ^<230 (name printString)>
+!
+METHOD FFI
+open
+  handle <- self openPrim
+!
+METHOD FFI
+open: theName
+  self name: theName.
+  ^self open
+!
+METHOD FFI
+closePrim
+  ^<231 handle>
+!
+METHOD FFI
+close
+  self closePrim.
+  handle <- nil
+!
+METHOD FFI
+call: theName
+  ^self call: theName args: (Array new: 0)
+!
+METHOD FFI
+call: theName arg: theArg
+  | args |
+  args <- Array new: 1.
+  args at: 1 put: theArg.
+  ^self call: theName args: args.
+!
+METHOD FFI
+call: theName arg: argOne arg: argTwo
+  | args |
+  args <- Array new: 2.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  ^self call: theName args: args.
+!
+METHOD FFI
+call: theName arg: argOne arg: argTwo arg: argThree
+  | args |
+  args <- Array new: 3.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  args at: 3 put: argThree.
+  ^self call: theName args: args.
+!
+METHOD FFI
+callInt: theName
+  ^self callInt: theName args: (Array new: 0)
+!
+METHOD FFI
+callInt: theName arg: theArg
+  | args |
+  args <- Array new: 1.
+  args at: 1 put: theArg.
+  ^self callInt: theName args: args.
+!
+METHOD FFI
+callInt: theName arg: argOne arg: argTwo
+  | args |
+  args <- Array new: 2.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  ^self callInt: theName args: args.
+!
+METHOD FFI
+callInt: theName arg: argOne arg: argTwo arg: argThree
+  | args |
+  args <- Array new: 3.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  args at: 3 put: argThree.
+  ^self callInt: theName args: args.
+!
+METHOD FFI
+callStr: theName
+  ^self callStr: theName args: (Array new: 0)
+!
+METHOD FFI
+callStr: theName arg: theArg
+  | args |
+  args <- Array new: 1.
+  args at: 1 put: theArg.
+  ^self callStr: theName args: args.
+!
+METHOD FFI
+callStr: theName arg: argOne arg: argTwo
+  | args |
+  args <- Array new: 2.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  ^self callStr: theName args: args.
+!
+METHOD FFI
+callStr: theName arg: argOne arg: argTwo arg: argThree
+  | args |
+  args <- Array new: 3.
+  args at: 1 put: argOne.
+  args at: 2 put: argTwo.
+  args at: 3 put: argThree.
+  ^self callStr: theName args: args.
+!
+METHOD FFI
+call: theName args: theArgs
+  | func args |
+  func <- self at: theName.
+  args <- theArgs asArray.
+  <234 handle func args>
+!
+METHOD FFI
+callInt: theName args: theArgs
+  | func args |
+  func <- self at: theName.
+  args <- theArgs asArray.
+  <235 handle func args>
+!
+METHOD FFI
+callStr: theName args: theArgs
+  | func args |
+  func <- self at: theName.
+  args <- theArgs asArray.
+  <236 handle func args>
+!
+METHOD FFI
+getInt: theName
+  | symb |
+  symb <- self at: theName.
+  ^<240 handle symb>
+!
+METHOD FFI
+setInt: theName value: anInt
+  | symb |
+  symb <- self at: theName.
+  <241 handle symb anInt>
+!
+COMMENT --------- System ----------
+METHOD MetaSystem
+name
+  ^<109>
+!
+METHOD MetaSystem
+isWindows
+  ^self name = 'Windows'
+!
+METHOD MetaSystem
+isUnix
+  "Simplified: All non Windows systems are Unix systems ;)"
+  ^self isWindows not
+!
+METHOD MetaSystem
+suffixForDLL
+  "FIXME: For HP/UX we should use the suffix .sl"
+  self isWindows ifTrue: [ ^'.dll' ] ifFalse: [ ^'.so' ]
+!
+COMMENT --------- Pathname ---------
+METHOD MetaPathname
+new
+  | obj |
+  obj <- super new.
+  obj init.
+
+  ^obj
+!
+METHOD MetaPathname
+new: pathname
+  | obj |
+  obj <- self new.
+  obj path: pathname.
+  ^obj
+!
+METHOD MetaPathname
+separator
+  System isWindows ifTrue: [ ^$\ ] ifFalse: [ ^$/ ]
+!
+METHOD Pathname
+init
+  path <- ''
+!
+METHOD Pathname
+path: pathname
+  path <- pathname asString
+!
+METHOD Pathname
+path
+  ^path
+!
+METHOD Pathname
++ other
+  path <- path + other printString
+!
+METHOD Pathname
+suffix
+  | index |
+  index <- path highestIndexOf: $..
+  index notNil ifTrue: [ ^path from: index to: path size ].
+  ^nil
+!
+METHOD Pathname
+replaceOrAddSuffix: suffix
+  | index pathWithoutSuffix |
+  index <- path highestIndexOf: $..
+  pathWithoutSuffix <- path.
+  index notNil ifTrue: [ pathWithoutSuffix <- path from: 1 to: index - 1 ].
+  path <- pathWithoutSuffix + suffix asString
+!
+METHOD Pathname
+asString
+  ^self path
+!
+METHOD Pathname
+printString
+  ^self asString
+!
+COMMENT -------- Image --------
+METHOD MetaImage
+new
+  | obj |
+  obj <- super new.
+  obj imagePathname: ''.
+  obj sourcePathname: ''.
+  ^obj
+!
+METHOD MetaImage
+writeSource
+  | obj |
+  obj <- self new.
+  ^obj writeSource
+!
+METHOD Image
+imagePathname
+  ^imagePathname
+!
+METHOD Image
+imagePathname: path
+  imagePathname <- Pathname new: imagePathname asString
+!
+METHOD Image
+sourcePathname
+  ^sourcePathname
+!
+METHOD Image
+sourcePathname: path
+  sourcePathname <- Pathname new: sourcePathname asString
+!
+METHOD Image
+writeSource
+  | path |
+  (sourcePathname isNil or: [ sourcePathname asString isEmpty ]) ifTrue: [ path <- 'imageSourceTest' ] ifFalse: [ path <- sourcePathname ].
+  ^self writeSource: path
+!
+METHOD Image
+writeSource: path
+  | file |
+  sourcePathname <- Pathname new: path asString.
+
+  file <- File open: sourcePathname asString mode: 'wb'.
+
+  self writeClassesTo: file.
+  self writeMethodsTo: file.
+
+  file write: 'BEGIN nil main'.
+  file newline.
+  file write: 'END'.
+  file newline.
+
+  file close.
+
+  'Not yet implemented!' printNl.
+!
+METHOD Image
+writeClassesTo: file
+  visited <- Dictionary new.
+  globals do: [ :cls |
+    (cls isKindOf: Class)
+      ifTrue: [
+        self writeClass: cls class to: file.
+        self writeClass: cls to: file
+      ]
+  ]
+!
+METHOD Image
+writeMethodsTo: file
+  visited <- Dictionary new.
+  globals do: [ :cls |
+    (cls isKindOf: Class)
+      ifTrue: [
+        self writeMethodsOf: cls class to: file.
+        self writeMethodsOf: cls to: file
+      ]
+  ]
+!
+METHOD Image
+writeClass: cls to: file
+  | stmt vars parent |
+
+  (visited includes: cls asString asSymbol) ifTrue: [ ^self ].
+
+  parent <- cls parent.
+  parent isNil ifFalse: [ (visited includes: parent asString asSymbol) ifFalse: [ self writeClass: parent to: file ] ].
+  visited at: cls asString asSymbol put: 1.
+
+  cls = Object ifTrue: [ ^self ].
+  stmt <- 'RAWCLASS ' + cls asString + ' ' + cls class asString + ' ' + parent asString.
+  vars <- cls variables.
+  vars notNil ifTrue: [ vars do: [ :v | stmt <- stmt + ' ' + v asString ] ].
+  file write: stmt.
+  file newline
+!
+METHOD Image
+writeMethodsOf: cls to: file
+  | methods parent |
+
+  (visited includes: cls asString asSymbol) ifTrue: [ ^self ].
+
+  parent <- cls parent.
+  parent isNil ifFalse: [ (visited includes: parent asString asSymbol) ifFalse: [ self writeMethodsOf: parent to: file ] ].
+  visited at: cls asString asSymbol put: 1.
+
+  file write: ( 'COMMENT ----------' + cls asString + '---------' ).
+  file newline.
+  methods <- cls methods.
+  methods isNil ifTrue: [ ^nil ].
+  methods do: [ :m | self writeMethod: m of: cls to: file ]
+!
+METHOD Image
+writeMethod: meth of: cls to: file
+  | stmt txt |
+
+  txt <- meth text asString.
+
+  stmt <- 'METHOD ' + cls asString.
+  file write: stmt.
+  file newline.
+  file write: txt.
+  "FIXME: Verify if txt ends with a newline"
+  file write: '!'.
+  file newline.
+!
+COMMENT =============================================================
+COMMENT === Optional modules
+COMMENT =============================================================
+COMMENT
+COMMENT == GUI ==
+METHOD MetaGuiPrimitives
+new
+  ^self instance.
+!
+METHOD MetaGuiPrimitives
+instance
+	theInstance isNil ifTrue: [ theInstance <- super new. theInstance init ].
+	^theInstance
+!
+METHOD MetaGuiPrimitives
+resetInstance
+  "Attention: This method MUST be called before this class can be used!"
+  theInstance <- nil
+!
+METHOD MetaGuiPrimitives
+test
+  | p b bb v d e done |
+  p <- GuiPrimitives instance.
+
+  p message: 'This is a simple test!'.
+
+  b <- p iupButton: 'Click Me!' action: 'button1Action'.
+  bb <- p iupButton: 'And me, too!'.
+  v <- p iupVbox: b.
+  p iupAppend: bb to: v.
+  d <- p iupDialog: v.
+  p iupShow: d.
+
+
+"  p iupMainLoop."
+  p registerAction: 'button1Action'.
+  done <- false.
+  [ done ] whileFalse: [
+    e <- p loopStep.
+    [ e isNil] whileTrue: [ p sleep: 10. e <- p loopStep. ]
+    'An event occured!!!' printNl.
+    e asString printNl.
+  ]
+
+  p release.
+!
+METHOD GuiPrimitives
+init
+  iup <- FFI new: 'iup.dll'.
+  self initFunctions.
+
+  self iupOpen.
+!
+METHOD GuiPrimitives
+release
+  self iupClose.
+  iup close.
+  iup <- nil
+!
+METHOD GuiPrimitives
+iup
+  ^iup
+!
+METHOD GuiPrimitives
+initFunctions
+  iup add: #IupOpen.
+  iup add: #IupClose.
+  iup add: #IupMessage.
+  iup add: #IupVbox.
+  iup add: #IupButton.
+  iup add: #IupDialog.
+  iup add: #IupShow.
+  iup add: #IupMainLoop.
+  iup add: #IupAppend
+!
+METHOD GuiPrimitives
+iupOpen
+  iup call: #IupOpen
+!
+METHOD GuiPrimitives
+iupClose
+  iup call: #IupClose
+!
+METHOD GuiPrimitives
+message: msg
+  self message: msg title: 'LittleSmalltalk Message'
+!
+METHOD GuiPrimitives
+message: msg title: title
+  iup call: #IupMessage arg: title arg: msg
+!
+METHOD GuiPrimitives
+iupButton: label
+ ^self iupButton: label action: 'DefaultButtonAction'
+!
+METHOD GuiPrimitives
+iupButton: label action: actionString
+  ^iup callInt: #IupButton arg: label arg: (actionString asString)
+!
+METHOD GuiPrimitives
+iupVbox: firstItem
+  ^iup callInt: #IupVbox arg: firstItem arg: 0
+!
+METHOD GuiPrimitives
+iupDialog: item
+  ^iup callInt: #IupDialog arg: item
+!
+METHOD GuiPrimitives
+iupShow: item
+  ^iup call: #IupShow arg: item
+!
+METHOD GuiPrimitives
+iupMainLoop
+  ^iup callInt: #IupMainLoop
+!
+METHOD GuiPrimitives
+iupAppend: item to: box
+  ^iup callInt: #IupAppend arg: box arg: item
+!
+METHOD GuiPrimitives
+registerAction: action
+  | a |
+  a <- action asString.
+  <237 a>
+!
+METHOD GuiPrimitives
+registerListAction: action
+  | a |
+  a <- action asString.
+  <238 a>
+!
+METHOD GuiPrimitives
+loopStep
+  ^<239>
+!
+METHOD GuiPrimitives
+sleep: ms
+  <110 ms>
+!
+BEGIN nil main
+END

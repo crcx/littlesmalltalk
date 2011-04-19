@@ -1,0 +1,144 @@
+.SH
+Who's On Top?
+.PP
+One of the most important decisions to be made in designing a new user
+interface (or front end) for the Little Smalltalk system is whether the user
+interface management code should sit on top of the Smalltalk bytecode 
+interpreter, setting up commands and invoking the interpreter to execute them,
+or underneith the bytecode interpreter, being invoked by Smalltalk, via the
+mechanism of primitive methods.  Both schemes have advantages and disadvantages
+which we will discuss in this essay.
+.PP
+In a simple interface, placing Smalltalk on top is often easier.  The main
+driver need only set up one initial call to the Smalltalk bytecode interpreter,
+and thereafter everything is done in Smalltalk.  For example, we might put
+initialization code in a method in class \fBSmalltalk\fP, as follows:
+.DS L
+Class Smalltalk
+	getString
+		\(ua <1>
+|
+	run		| string |
+		[ '>	' printNoReturn.
+		   string <- smalltalk getString. 
+		   string notNil ]
+			whileTrue: [ (string size > 0)
+					ifTrue: [ smalltalk doIt: string ] ]
+]
+.DE
+.PP
+Once the bytecode interpreter is started on the method \fBrun\fP, it will
+loop continuously, reading commands from the user (via the method 
+\fBgetString\fP) and executing them (via the method \fBdoIt:\fP).
+Presumably the user has some way of indicating end of input, such as the
+unix control-D convention, which causes \fBgetString\fP to return the
+value nil.  The \fIif\fP statement inside the while loop
+insures that if the user simply hits the return key execution will quickly 
+loop back to the prompt.
+.PP
+Besides making the initialization for the Little Smalltalk system easy,
+this approach also has the advantage of putting more code into Smalltalk
+itself, where the user can see it and (presumably) modify it if they wish.
+A general guideline is that it is better to put as much into Smalltalk
+as possible, since Smalltalk is easier to write and the bytecode representation
+usually smaller than the equivalent code in C.
+Never the less, there are valid reasons why an implementor might choose
+a different technique.
+.PP
+For example, if there are many other activities which should command the 
+attention of the controlling program (window updates, mouse motions) the 
+Smalltalk code may not be able to respond fast enough, or might become too 
+large and complex to be workable.
+In this case the only alternative is to have the front end respond directly
+to events, and only invoke the Smalltalk interpreter as time permits.
+In basic terms, the front end would perform the loop written in the method
+\fBinit\fP shown above (along with handling various other tasks), and then 
+call upon the method in class \fBSmalltalk\fP
+to execute the message \fBdoIt:\fP.
+.SH
+How to Do It
+.PP
+In either of the two schemes described above, an important message is 
+\fBdoIt:\fP, which takes a string (presumably representing a Smalltalk
+expression) and performs it.  An easy way to perform this message is to
+make a method out of the expression, by appending a message pattern
+on front, and then pass the string to the method parser.  If the method
+parser is successful, the method can then be executed.
+.DS L
+doIt: aString		| method |
+	method <- Method new.
+	method text: ( 'proceed ', aString ).
+	(method compileWithClass: Smalltalk)
+		ifTrue: [ method executeWith: #( 0 ) ]
+.DE
+.PP
+The message \fBcompileWithClass:\fP compiles the method as if it was
+appearing as part of class Smalltalk.  If compilation is successful,
+the message \fBexecuteWith:\fP executes the message, using as arguments
+the array #(0).  The array that accompanies this message must have at
+least one element, as the first value is used as the receiver for
+the method.
+Similar techniques can be used for the message \fBprintIt:\fP, if desired.
+.SH
+The Other End
+.PP
+The opposite extreme from the front end are those messages that originate
+within the bytecode interpreter and must be communicated to the user.
+We can divide these values into four categories:
+.IP 1.
+System errors.  These are all funnelled through the routine sysError(), found
+in memory.c.  System errors are caused by dramatically wrong conditions,
+and should generally cause the system to abort after printing the message
+passed as argument to sysError().
+.IP 2.
+Compiler errors.  As we noted above, the method compiler is used to
+parse expressions typed directly at the keyboard, so these message can
+also arise in that manner.  These are all funnelled through the routine
+compilError(), found in parse.c.  These should print their arguments 
+(two strings), in an appropriate location on the users screen.
+Execution continues normally after call.
+.IP 3.
+Various primitives, found in primitive.c, are also used to print strings
+on the users terminal.  In particular, an appropriate meaning should be
+given to the message \fBprint\fP in class \fBString\fP.  What appropriate
+means is undoubtedly implementation specific.
+.IP 4.
+Finally, and perhaps most importantly, there must be some means provided
+to allow users to enter and edit methods.  The interface for this task
+is standard; instances of class \fBClass\fP must respond to the messages
+\fBaddMethod\fP and \fBeditMethod:\fP, the latter taking as argument a
+symbol representing the name of a method.  How they achieve their two
+tasks is, however, implementation specific.
+Under Unix, a simple implementation adds a new primitive for Strings;
+this primitive copies the string into a temporary file, starts up the
+editor on the file, and returns the contents of the file when the user
+exits the editor.  Having this capability, the method editing code
+can be given as follows.  In class \fBClass\fP:
+.DS L
+	addMethod
+		self doEdit: ''
+|
+	editMethod: name		| theMethod |
+		theMethod <- methods at: name
+				ifAbsent: [ 'no such method ' print. \(ua nil ].
+		self doEdit: theMethod text
+|
+	doEdit: startingText		| theMethod |
+		theMethod <- Method new;
+			text: startingText edit.
+		(theMethod compileWithClass: self)
+			ifTrue: [ methods at: theMethod name put: theMethod ]
+.DE
+.LP
+And in class \fBString\fP:
+.DS L
+	edit
+		\(ua <19 self>
+.DE
+.LP
+Here primitive 19 performs all the tasks of creating the temporary file,
+starting the editor, and creating the string representing the file
+contents when the editor is exited.
+.PP
+Alternative techniques, for example using windowing, would undoubtedly
+be more complicated.

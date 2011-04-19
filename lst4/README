@@ -1,0 +1,44 @@
+Little Smalltalk, Version 4
+Timothy A. Budd, budd@cs.orst.edu
+Oregon State University
+
+
+I first started developing Little Smalltalk back in 1984, and to tell the
+truth hadn't touched it for several years now.  However, when I attended
+OOPSLA in Portland a few months ago, several things struck me:
+
+ * Addison-Wesley was /still/ selling my book ``A Little Smalltalk''
+   (despite it being many years old now and very very dated), and people were
+   still buying it (don't ask me why).
+ * There was a heck of a lot of interest in Smalltalk on the vendor floor.
+ * People kept asking me about Little Smalltalk.
+
+These things combined to make me think perhaps I should revisit Little 
+Smalltalk.  In my spare time since then I've been updating the system, and 
+this is the result.
+
+What Little Smalltalk is, and more importantly, what it isn't
+
+First and foremost, let me say at the beginning in as LOUD a voice as I can 
+that Little Smalltalk is NOT a smalltalk-80 system. If you want a real
+Smalltalk system go buy one from ParcPlace, Digitalk, IBM, or whomever.
+
+Little Smalltalk is a sort of fun experiment in building a minimal 
+smalltalk system.  The source code for the interpreter is less than 1800
+lines of code.  The image consists of less than 4000 objects.  It runs
+in almost no memory.  In short, it's small, it's reasonably fast, it's easy 
+to understand, and easy to modify.
+
+As you might expect, in order to get Smalltalk to run in something this
+small, I've had to make lots of changes.  Here are the most notable:
+
+ * No graphics
+ * The user interface is a more conventional real-eval-print loop 
+   (like most Lisp systems), not a browser. (But it is all written in
+   Smalltalk itself, so you can modify it if you wish).
+ * Primitives and cascades are handled as they were in earlier Little
+   Smalltalk systems, which is not how they are handed in Smalltalk-80.
+ * The standard class hierarchy differs considerably from Smalltalk-80.
+   * My basic collections are List, Tree, Dictionary, Array, and String
+   * The only numbers in the standard image are large and small integers
+     (adding fractions and floats might be an interesting exercise, however).

@@ -1,0 +1,641 @@
+.so macros
+.ds CH
+.Sx "Class Description"
+.PS
+ellipsewid = 1.3i
+arrow
+A: ellipse "class heading"
+arc -> cw
+arc
+ellipse "instance variables"
+arc ->
+arc cw
+B: ellipse "protocol"
+arrow
+arrow from A.e to B.w
+.PE
+.Sx "Class Heading"
+.PS
+arrow
+circle "\fBClass\fP"
+arrow
+ellipse "variable"
+arrow right 3i
+move left 3i
+move right 0.1i
+arc -> cw
+arc
+ellipse "colon variable"
+arc ->
+arc cw
+.PE
+.IP
+\fBvariable\fP defines the class name, must begin with an upper case letter.
+.br
+\fBcolon variable\fP defines the superclass name, superclass is \fBObject\fP
+if not given.
+.Sx "Instance Variables"
+.PS
+arrow
+circle "|"
+arrow
+A: ellipse "variable"
+arc -> cw
+arc cw
+arrow left 1.3i
+arc cw
+arc cw
+move to A.e
+arrow
+circle "|"
+arrow
+.PE
+.IP
+Instance variables must begin with a lower case letter.
+.Sx "Protocol"
+.PS
+arrow
+circle "["
+arrow
+A: ellipse "method"
+arc -> cw
+line down 0.2i
+arc cw
+arrow left 0.4i
+circle "|"
+arrow left 0.4i
+arc cw
+line up 0.2i
+arc cw
+move to A.e
+arrow
+circle "]"
+arrow
+.PE
+.IP
+Vertical bar separating methods \fBmust\fP be placed in column 1.
+.Sx "Method"
+.PS
+arrow
+A: ellipse "method pattern"
+arc -> cw
+arc
+ellipse "temporary variables"
+arc ->
+arc cw
+C: ellipse "statements"
+arrow
+arrow from A.e to C.w
+.PE
+.bp
+.Sx "Method Pattern"
+.PS
+A: arrow
+ellipse "unary selector"
+arrow right 3i
+move to A
+arc -> cw
+line down 0.1i
+B: arc
+ellipse "binary selector"
+arrow
+ellipse "argument variable"
+arc ->
+line up 0.1i
+arc -> cw
+move to start of B
+line down 0.6i
+arc
+ellipse "keyword selector"
+arrow 
+C: ellipse "argument variable"
+arc
+line up 0.6i
+move to C.e
+right
+arc -> cw
+arc cw
+arrow left 3.1i
+arc -> cw
+arc cw
+.PE
+.IP
+Argument variables must begin with a lower case letter, 
+and must be distinct from instance variables.
+.Sx "Temporary Variables"
+.PS
+arrow
+circle "|"
+arrow
+A: ellipse "variable"
+arc -> cw
+arc cw
+arrow left 1.3i
+arc cw
+arc cw
+move to A.e
+arrow
+circle "|"
+arrow
+.PE
+.IP
+temporary variables must begin with lower case letters, 
+and must be distinct from both instance and argument variables.
+.Sx "Statements"
+.PS
+arrow
+A: line right 1.5i
+move to start of A
+arc -> cw
+arc
+circle "\s+6\(ua\s-6"
+arc ->
+arc cw
+B: ellipse "expression"
+arrow right 2.5i
+move to B.e
+move right 0.5i
+arc -> cw
+arc
+circle "."
+arc ->
+arc cw
+move to B.e
+arc -> cw
+line down 0.4i
+arc -> cw
+circle "."
+arrow left 2.5i
+arc cw
+arrow up 0.4i
+arc cw
+.PE
+.Sx "Expression"
+.PS
+A: arrow right 3.3i
+move to start of A
+arc -> cw
+arc
+ellipse "variable"
+arrow
+B: circle "<\(mi"
+arc ->
+arc cw
+C: ellipse "cascaded expression"
+arrow 
+move to B.e
+arc -> cw
+arc cw
+arrow left 2.3i
+arc -> cw
+arc cw
+.PE
+.bp
+.Sx "Cascaded Expression"
+.PS
+arrow
+ellipse "simple expression"
+arrow right 3.5i
+move left 0.5i
+right
+arc -> cw
+arc cw
+circle ";"
+arrow
+ellipse "continuation"
+arc -> cw
+arc cw
+.PE
+.Sx "Simple Expression"
+.PS
+arrow
+A: ellipse "binary"
+arrow
+move to A.e
+arc -> cw
+line down 0.2i
+arc cw
+ellipse "keyword"
+arc -> cw
+line up 0.2i
+arc cw
+.PE
+.Sx "Binary"
+.PS
+arrow
+A: ellipse "unary"
+arrow
+move to A.e
+arc -> cw
+B: line down 0.2i
+arc cw
+ellipse "binary selector"
+arc -> cw
+line up 0.2i
+arc cw
+.PE
+.Sx "Unary"
+.PS
+arrow
+A: ellipse "primary"
+B: line right 2i
+arc -> cw
+arc cw
+ellipse "unary selector"
+arc -> cw
+arc cw
+move to B.e
+arrow right
+.PE
+.Sx "Primitive"
+.PS
+arrow right 0.2i
+circle "<primitive" wid 0.7i
+arrow right 0.2i
+ellipse "unsigned integer"
+A: line right 1.7i
+arc -> cw
+arc cw
+ellipse "primary"
+arc -> cw
+arc cw
+move to A.e
+arrow right
+circle ">"
+arrow right
+.PE
+.IP
+Unsigned integer must be a number in the range 0-255.
+.bp
+.Sx "Primary"
+.PS
+A: arrow right 2i
+ellipse "variable"
+arrow right 2i
+move to start of A
+move right 0.5i
+arc -> cw
+B: line down 0.1i
+arc
+arrow right 1i
+ellipse "literal"
+arrow right 1i
+arc ->
+line up 0.1i
+arc cw
+move to end of B
+C: arrow down 0.6i
+arc
+arrow right 1i
+ellipse "block"
+arrow right 1i
+arc ->
+line up 0.6i
+move to end of C
+Z: arrow down 0.6i
+arc
+arrow right 1i
+ellipse "primitive"
+arrow right 1i
+arc ->
+line up 0.6i
+move to end of Z
+arrow down 0.6i
+arc
+circle "("
+arrow
+ellipse "cascaded expression"
+arrow
+circle ")"
+arc ->
+line up 0.6i
+.PE
+.IP
+If variable begins with an upper case letter it is a class name, otherwise
+variable must be instance, argument or temporary variable or pseudo variable
+name.
+.Sx "Continuation"
+.PS
+A: arrow
+arrow right 1.5i
+ellipse "unary selector"
+Z: line right 1.5i
+arrow right 0.5i
+move to end of Z
+arc -> cw
+arrow down 2i
+arc -> cw
+arrow left 4.5i
+arc -> cw
+arrow up 2i
+arc -> cw
+move to end of A
+arc -> cw
+C: arrow down 0.4i
+arc
+ellipse "binary selector"
+arrow
+ellipse "unary"
+arc ->
+line up 0.4i
+arc cw
+move to end of C
+arrow down 0.6i
+arc
+ellipse "keyword"
+arrow
+D: ellipse "binary"
+arc ->
+line up 0.6i
+move to D.e
+right
+arc -> cw
+arc cw
+arrow left 3.1i
+arc cw
+arc -> cw
+.PE
+.bp
+.Sx "Block"
+.PS
+arrow
+A: circle "["
+arrow right 2.2i
+ellipse "statements"
+arrow
+circle "]"
+arrow
+move to A.e
+arc -> cw
+arc
+ellipse "block arguments" width 1.2i
+arc ->
+arc cw
+.PE
+.IP
+The last statement cannot be followed by a period.
+.Sx "Block Arguments"
+.PS
+arrow
+A: ellipse "colon variable"
+arrow
+circle "|"
+arrow
+move to A.e
+arc -> cw
+arc cw
+arrow left 1.3i
+arc cw
+arc cw
+.PE
+.Sx "Literal"
+.PS
+arrow right 1i
+A: arrow
+ellipse "number"
+arrow right 1.5i
+move to start of A
+arc -> cw
+B: line down 0.1i
+arc
+ellipse "symbol"
+arc ->
+line up 0.1i
+arc cw
+move to end of B
+C: arrow down 0.6i
+arc
+ellipse "string"
+arc ->
+line up 0.6i
+move to end of C
+D: arrow down 0.6i
+arc
+ellipse "character constant"
+arc ->
+line up 0.6i
+move to end of D
+H: arrow down 0.6i
+arc
+ellipse "bytearray"
+arc ->
+line up 0.6i
+move to end of H
+E: arrow down 0.6i
+arc
+ellipse "array constant"
+arc ->
+line up 0.6i
+.PE
+.bp
+.Sx "Number"
+.PS
+A: arrow right 3.6i
+move to start of A
+arc -> cw
+arc
+ellipse "base" width 0.8i
+arc ->
+arc cw
+arc -> cw
+arc
+ellipse "sign" width 0.8i
+arc ->
+arc cw
+ellipse "unsigned number"
+arrow
+.PE
+.Sx "Base"
+.PS
+arrow
+ellipse "unsigned integer"
+arrow
+circle "r"
+arrow
+.PE
+.Sx "Sign"
+.PS
+A: arrow
+arrow right 3i
+move to end of A
+B: arc cw
+arc
+circle "+"
+arc
+arc cw
+move to end of B
+arrow down 0.6i
+arc
+circle "\(mi"
+arc
+arrow up 0.6i
+.PE
+.Sx "Unsigned Number"
+.PS
+arrow
+A: ellipse "unsigned fraction"
+arc -> cw
+arc
+circle "e"
+arrow right 0.25i
+ellipse "sign" width 0.8i
+arrow right 0.25i
+ellipse "unsigned integer"
+arc ->
+arc cw
+move to A.e
+arrow right 4.2i
+.PE
+.Sx "Unsigned Fraction"
+.PS
+arrow
+A: ellipse "unsigned integer"
+arc -> cw
+arc
+circle "."
+arrow
+ellipse "unsigned integer"
+arc ->
+arc cw
+move to A.e
+arrow right 4i
+.PE
+.Sx "Unsigned Integer"
+.PS
+arrow
+A: circle "digit"
+arrow
+move to A.e
+arc -> cw
+arc cw
+arrow left 0.5i
+arc -> cw
+arc cw
+.PE
+.bp
+.Sx "Symbol"
+.PS
+arrow
+circle "#"
+arrow
+A: circle "char"
+arrow
+move to A.e
+arc cw
+arc cw
+arrow left 0.5i
+arc cw
+arc cw
+.PE
+.IP
+char is any non-space character that is not one of period, parenthesis
+or square braces.
+.Sx "String"
+.PS
+arrow
+circle "'"
+arrow
+A: circle "char"
+arrow
+circle "'"
+arrow
+move to A.e
+arc cw
+arc cw
+arrow left 0.5i
+arc cw
+arc cw
+.PE
+.IP
+To include a quote mark in a string, use two adjacent quote marks.
+.Sx "Character Constant"
+.PS
+arrow
+circle "$"
+arrow
+circle "char"
+arrow
+.PE
+.Sx "Bytearray"
+.PS
+arrow
+circle "#"
+arrow
+circle "["
+arrow
+A: ellipse "unsigned integer"
+arrow
+circle "]"
+arrow
+move to A.e
+arc -> cw
+arc cw
+line left 1.3i
+arc -> cw
+arc cw
+.PE
+.IP
+Integer must be in the range 0 through 255.
+.Sx "Array Constant"
+.PS
+arrow
+circle "#"
+arrow
+ellipse "array"
+arrow
+.PE
+.bp
+.Sx "Array"
+.PS
+arrow
+circle "("
+arrow
+A: arc -> cw
+arc
+ellipse "number"
+arc ->
+arc cw
+B: arrow
+circle ")"
+arrow
+move to start of A
+arrow right 2.5i
+move to end of A
+C: arrow down 0.6i
+arc
+ellipse "symbol"
+arc ->
+arrow up 0.6i
+move to end of C
+D: arrow down 0.6i
+arc
+ellipse "string"
+arc ->
+arrow up 0.6i
+move to end of D
+E: arrow down 0.6i
+arc
+ellipse "character constant"
+arc ->
+arrow up 0.6i
+move to end of E
+arrow down 0.6i
+arc
+ellipse "array"
+arc ->
+arrow up 0.6i
+move to start of B
+right
+arc -> cw
+arrow down 3i
+arc -> cw
+arrow left 2.4i
+arc -> cw
+arrow up 3i
+arc -> cw
+.PE
+.IP
+The leading sharp sign can be omitted in symbols and arrays inside of 
+an array list.
+Binary selectors, keywords, and other strings are treated as Symbols inside
+of arrays.

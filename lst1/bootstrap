@@ -1,0 +1,1807 @@
+Class Class
+[
+	edit
+		<ClassEdit self>
+|
+	list
+		<ClassList self>
+|
+ 	new		| superclass newinstance |
+		superclass <- <SuperClass self>.
+		<RespondsToNew superclass >
+			ifTrue: [newinstance <- superclass new ]. 
+		newinstance <- <ClassNew self newinstance >.
+		<RespondsTo self #new > 
+			ifTrue: [newinstance <- newinstance new].
+		^ newinstance
+|
+ 	new: aValue 		| superclass newinstance |
+		superclass <- <SuperClass self>.
+		<RespondsToNew superclass >
+			ifTrue: [newinstance <- superclass new ]. 
+		newinstance <- <ClassNew self newinstance >.
+		<RespondsTo self #new: > 
+			ifTrue: [newinstance <- newinstance new: aValue ].
+		^ newinstance
+|
+ 	printString
+		^ <ClassName self >
+|
+	respondsTo
+		<PrintMessages self>
+|
+	respondsTo: aSymbol		| aClass |
+		aClass <- self.
+		[aClass notNil] whileTrue:
+			[ <RespondsTo aClass aSymbol> ifTrue: [ ^ true ].
+			 aClass <- aClass superClass ].
+		^ false
+|
+	superClass
+		^ <SuperClass self>
+
+|
+	variables
+		^ <Variables self>
+|
+	view
+		<ClassView self>
+]
+Class Object
+[
+ 	== anObject
+		^ <Equality self anObject >
+|
+       ~~ x
+                ^ (self == x) not
+|
+ 	= x
+		^ (self == x)
+|
+ 	~= x
+		^ (self = x) not
+|
+ 	asString
+		^ self class printString
+|
+        asSymbol
+                ^ self asString asSymbol
+|
+	class
+		^ <Class self >
+|
+        copy
+                ^ self shallowCopy
+|
+        deepCopy		| size newobj |
+		size <- <Size self>.
+		(size < 0) 
+			ifTrue: [^ self] "if special just copy object"
+			ifFalse: [ newobj <- self class new.
+			(1 to: size) do: [:i |
+				<AtPut newobj i
+					( <At self i > copy ) > ].
+				^ newobj ]
+|
+ 	do: aBlock			| item |
+		item <- self first.
+		^ [item notNil] whileTrue:
+			[aBlock value: item.  item <- self next]
+|
+	error: aString
+		<Error aString self>
+|
+        first
+                ^ self
+|
+        isKindOf: aClass                | objectClass |
+                objectClass <- self class.
+                [objectClass notNil] whileTrue:
+                        [(objectClass == aClass) ifTrue: [^ true].
+                         objectClass <- objectClass superClass].
+                ^ false
+|
+        isMemberOf: aClass
+                ^ aClass == self class
+
+|
+        isNil
+                ^ false
+|
+        next
+                ^ nil
+|
+        notNil
+                ^ true
+|
+ 	print
+		<PrintWithReturn (self printString) >
+|
+ 	printString
+		^ self asString
+
+|       respondsTo: cmd
+                ^ self class respondsTo: cmd
+
+|       shallowCopy		| size newobj |
+		size <- <Size self>.
+		(size < 0) 
+			ifTrue: [^ self] "if special just copy object"
+			ifFalse: [ newobj <- self class new.
+				(1 to: size) do: [:i |
+					<AtPut newobj i
+						<At self i > > ].
+					^ newobj ]
+]
+Class String :ArrayedCollection
+[
+	, aString
+		^ <StringCatenation self 
+			(<SameTypeOfObject self aString>
+				ifTrue:  [aString]
+				ifFalse: [aString printString])>
+|
+	= aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompare self aString> = 0]
+			ifFalse: [self compareError]
+|
+	< aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompare self aString> < 0]
+			ifFalse: [self compareError]
+|
+	<=  aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompare self aString> <= 0]
+			ifFalse: [self compareError]
+|
+	>=  aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompare self aString> >= 0]
+			ifFalse: [self compareError]
+|
+	>  aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompare self aString> > 0]
+			ifFalse: [self compareError]
+|
+	asInteger
+		^ <primitive 164 self>
+|
+	asFloat
+		^ <primitive 165 self>
+|
+	asSymbol
+		^ <StringAsSymbol self>
+|
+	at: aNumber
+		^ <StringAt self aNumber>
+|
+	at: aNumber put: aChar
+		<StringAtPut self aNumber aChar>
+|
+	compareError
+		^ self error: 'strings can only be compared to strings'
+|
+	copyFrom: start to: stop
+		^ <CopyFromLength self start (stop - start + 1) >
+|
+	copyFrom: start length: len
+		^ <CopyFromLength self start len >
+|
+	deepCopy
+		^ <StringCopy self >
+|
+	new: size
+		^ <NewString size>
+|
+	printAt: aPoint
+		<PrintAt self (aPoint x) (aPoint y)>
+|
+	printString
+		^ <StringPrintString self>
+|
+	print
+		<PrintWithReturn self>
+|
+	printNoReturn
+		<PrintNoReturn self>
+|
+	size
+		^ <StringLength self>
+|
+	sameAs: aString
+		^ <SameTypeOfObject self aString>
+			ifTrue:  [<StringCompareWithoutCase self aString>]
+			ifFalse: [self compareError]
+]
+Class ArrayedCollection
+" This is just a null version of ArrayedCollection to serve as a place
+holder until the real version is read in during the prelude "
+[
+	nothing
+		1
+]
+
+Class UndefinedObject
+[
+        isNil
+                ^ true
+|
+        notNil
+                ^ false
+|
+        printString
+                ^ 'nil'
+]
+Class Array :ArrayedCollection
+[
+	new: aValue
+		^ <NewArray aValue>
+|
+	at: aNumber
+		( (aNumber < 1) or: [aNumber > <Size self> ] )
+			ifTrue: [ self error: 'index error'. ^nil ].
+		^ <At self aNumber >
+|
+	at: aNumber put: aValue
+		( (aNumber < 1) or: [aNumber > <Size self> ] )
+			ifTrue: [ self error: 'index error'. ^nil ].
+		<AtPut self aNumber aValue >.
+		^ aValue
+|
+	grow: newObject
+		^ <Grow self newObject>
+|
+	printString		| value i |
+		value <- ')'.
+		i <- <Size self>.
+		[i > 0] whileTrue: 
+			[ value <- <At self i>  printString ,
+					' ', value.
+				    i <- i - 1].
+		^ '#( ' , value
+|
+	size
+		^ <Size self>
+]
+Class Boolean
+[
+        &    aBoolean   
+		^ self and: [aBoolean]
+
+|       |    aBoolean  
+		^ self or: [aBoolean]
+
+|       and: aBlock   
+		^ self and: [aBlock value]
+
+|       or:  aBlock  
+		^ self or: [aBlock value]
+
+|	eqv: aBoolean
+		^ self == aBoolean
+
+|	xor: aBoolean
+		^ self ~~ aBoolean
+]
+Class True :Boolean
+[
+        ifTrue: trueAlternativeBlock ifFalse: falseAlternativeBlock
+                ^ trueAlternativeBlock value
+
+!       ifFalse: falseAlternativeBlock ifTrue: trueAlternativeBlock
+                ^ trueAlternativeBlock value
+
+!       ifTrue: trueAlternativeBlock
+                ^ trueAlternativeBlock value
+
+!       ifFalse: falseAlternativeBlock
+                ^ nil
+
+|       not
+                ^ false
+]
+Class False :Boolean
+[
+        ifTrue: trueAlternativeBlock ifFalse: falseAlternativeBlock
+                ^ falseAlternativeBlock value
+
+!       ifFalse: falseAlternativeBlock ifTrue: trueAlternativeBlock
+                ^ falseAlternativeBlock value
+
+!       ifTrue: trueAlternativeBlock
+                ^ nil
+
+!       ifFalse: falseAlternativeBlock
+                ^ falseAlternativeBlock value
+
+!       not
+                ^ true
+]
+"
+	Class Block.
+
+	Note how whileTrue: and whileFalse: depend upon the parser
+	optimizing the loops into control flow, rather than message
+	passing.  If this were not the case, whileTrue: would have to
+	be implemented using recursion, as follows:
+
+	whileTrue: aBlock
+		(self value) ifFalse: [^nil].
+		aBlock value.
+		^ self whileTrue: aBlock
+"
+Class Block
+[
+	newProcess
+		^ <NewProcess  self>
+|
+	newProcessWith: argumentArray
+		^ <NewProcess  self argumentArray>
+|
+	fork
+		self newProcess resume.
+		^ nil
+|
+	forkWith: argumentArray
+		(self newProcessWith: argumentArray) resume.
+		^ nil
+|
+	whileTrue
+		^ [self value ] whileTrue: []
+|
+	whileTrue: aBlock
+		^ [ self value ] whileTrue: [ aBlock value ]
+|
+	whileFalse
+		^ [ self value ] whileFalse: []
+|
+	whileFalse: aBlock
+		^ [ self value ] whileFalse: [ aBlock value ]
+|
+ 	value
+		<BlockExecute  0>
+|
+	value: a
+		<BlockExecute  1>
+|
+	value: a value: b
+		<BlockExecute  2>
+|
+	value: a value: b value: c
+		<BlockExecute  3>
+|
+	value: a value: b value: c value: d
+		<BlockExecute  4>
+|
+	value: a value: b value: c value: d value: e
+		<BlockExecute  5>
+]
+Class Symbol
+[
+	== aSymbol
+		^ <SameTypeOfObject self aSymbol >
+			ifTrue:  [<SymbolCompare self aSymbol >]
+			ifFalse: [false]
+|
+	printString
+		^ <SymbolPrintString self>
+|
+	asString
+		^ <SymbolAsString self>
+]
+
+Class Magnitude
+[
+	<= arg
+		^ (self < arg) or: [self = arg]
+
+|	< arg
+		^ (arg > self)
+
+|	= arg
+		^ (self > arg or: [self < arg]) not
+
+|	~= arg
+		^ (self = arg) not
+
+|	>= arg
+		^ (self > arg) or: [self = arg]
+
+|	> arg
+		^ arg < self
+
+|	between: low and: high
+		^ (self >= low) and: [self <= high]
+
+|	min: arg
+		^ (self < arg) ifTrue: [self] ifFalse: [arg]
+
+|	max: arg
+		^ (self > arg) ifTrue: [self] ifFalse: [arg]
+]
+Class Number :Magnitude
+[
+	maxtype: aNumber
+		^ <GeneralityTest self aNumber> 
+			ifTrue:  [self]
+			ifFalse: [aNumber coerce: self ]
+|
+	= aNumber
+		^ (self maxtype: aNumber) = (aNumber maxtype: self)
+|
+	< aNumber
+		^ (self maxtype: aNumber) < (aNumber maxtype: self)
+|
+	> aNumber
+		^ (self maxtype: aNumber) > (aNumber maxtype: self)
+|
+	+ aNumber
+		^ (self maxtype: aNumber) + (aNumber maxtype: self)
+|
+	- aNumber
+		^ (self maxtype: aNumber) - (aNumber maxtype: self)
+|
+	* aNumber
+		^ (self maxtype: aNumber) * (aNumber maxtype: self)
+|
+	/ aNumber
+		^ (self maxtype: aNumber) / (aNumber maxtype: self)
+|
+	^ aNumber
+		^ self asFloat ^ aNumber asFloat
+|
+	@ aNumber
+		^ ( Point new x: self ) y: aNumber
+|
+	abs
+		^ (self < 0)
+			ifTrue:  [ 0 - self ]
+			ifFalse: [ self ]
+|
+	exp
+		^ self asFloat exp
+|
+	gamma
+		^ self asFloat gamma
+|
+	ln
+		^ self asFloat ln
+|
+	log: aNumber
+		^ self ln / aNumber ln
+|
+	negated
+		^ 0 - self
+|
+	negative
+		^ self < 0
+|
+	pi
+		^ self * 3.1415926
+|
+	positive
+		^ self >= 0
+|
+	radians
+		^ Radian new: self asFloat
+|
+	raisedTo: aNumber
+		^ self asFloat ^ aNumber asFloat
+|
+	reciprocal
+		^ 1.00 / self
+|
+	roundTo: aNumber
+		^ (self / aNumber) rounded * aNumber
+|
+	sign
+		^ (self < 0)
+			ifTrue: [ -1 ]
+			ifFalse: [ (self > 0)
+					ifTrue: [ 1 ]
+					ifFalse: [ 0 ] ]
+|
+	sqrt
+		^ self asFloat sqrt
+|
+	squared
+		^ self * self
+|
+	strictlyPositive
+		^ self > 0
+|
+	to: highValue
+		^ Interval new ; from: self to: highValue by: 1
+|
+	to: highValue by: stepSize
+		^ Interval new ; from: self to: highValue by: stepSize
+|
+	truncateTo: aNumber
+		^ (self / aNumber) truncated * aNumber
+]
+Class Integer :Number
+[
+	= aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [ <IntegerEquality self aNumber> ]
+			ifFalse: [ super = aNumber ]
+|
+	> aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [ <IntegerGreaterThan self aNumber> ]
+			ifFalse: [ super > aNumber ]
+|
+	< aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [ <IntegerLessThan self aNumber> ]
+			ifFalse: [ super < aNumber ]
+|
+	+ aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [ <IntegerAddition self aNumber> ]
+			ifFalse: [ super + aNumber ]
+|
+	- aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<IntegerSubtraction self aNumber>]
+			ifFalse: [ super - aNumber ]
+|
+	* aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<IntegerMultiplication self aNumber>]
+			ifFalse: [ super * aNumber ]
+|
+	/ aNumber
+		^ self asFloat / aNumber
+|
+	// aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<IntegerSlash self aNumber>]
+			ifFalse: [self opError]
+|
+	\\ aNumber			| i |
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [i <- self * ( (self < 0)
+						ifTrue:  [ -1 ] 
+						ifFalse: [ 1 ] ).
+				  i rem: aNumber]
+			ifFalse:  [self opError]
+|
+	allMask: anInteger
+		^ anInteger = <BitAND self anInteger>
+|
+	anyMask: anInteger
+		^ 0 ~= <BitAND self anInteger>
+|
+	asCharacter
+		^ <IntegerToCharacter self>
+|
+	asFloat
+		^ <IntegerToFloat self >
+|
+	asInteger
+		^ self
+|
+	asString
+		^ <IntegerToString self>
+|
+	bitAnd: anInteger
+		^ <BitAND self anInteger>
+|
+	bitAt: anInteger
+		^ <BitAt self anInteger>
+|
+	bitInvert
+		^ <BitInverse self>
+|
+	bitOr: anInteger
+		^ <BitOR self anInteger>
+|
+	bitShift: anInteger
+		^ <BitShift self anInteger>
+|
+	bitXor: anInteger
+		^ <BitXOR self anInteger>
+|
+	even
+		^ (self rem: 2) = 0
+|
+	factorial
+		^ <Factorial self>
+|
+	gcd: anInteger
+		^ <SameTypeOfObject self anInteger>
+			ifTrue:  [<GCD self anInteger>]
+			ifFalse: [self opError]
+|
+	highBit
+		^ <HighBit self>
+|
+	lcm: anInteger
+		^ <SameTypeOfObject self anInteger>
+			ifTrue:  [self * anInteger quo: 
+					(self gcd: anInteger)]
+			ifFalse: [self opError]
+|
+	noMask: anInteger
+		^ 0 = (self bitAnd: anInteger)
+|
+	odd
+		^ (self rem: 2) ~= 0
+|
+	quo: anInteger
+		^ <SameTypeOfObject self anInteger>
+			ifTrue:  [<IntegerDivision self anInteger>]
+			ifFalse: [self opError]
+|
+	radix: aNumber
+		^ <RadixPrint self aNumber>
+|
+	rem: anInteger
+		^ <SameTypeOfObject self anInteger>
+			ifTrue:  [<IntegerMod self anInteger>]
+			ifFalse: [self opError]
+|
+	timesRepeat: aBlock		| i |
+		i <- 0.
+		[i < self] whileTrue:
+			[aBlock value. i <- i + 1]
+]
+Class Char :Magnitude
+[
+	== aChar
+		^ <SameTypeOfObject self aChar>
+			ifTrue:  [<CharacterEquality self aChar>]
+			ifFalse: [false]
+|	< aChar
+		^ <SameTypeOfObject self aChar>
+			ifTrue:  [<CharacterLessThan self aChar>]
+			ifFalse: [self compareError]
+|
+	= aChar
+		^ <SameTypeOfObject self aChar>
+			ifTrue:  [<CharacterEquality self aChar>]
+			ifFalse: [self compareError]
+|	> aChar
+		^ <SameTypeOfObject self aChar>
+			ifTrue:  [<CharacterGreaterThan self aChar>]
+			ifFalse: [self compareError]
+|
+	asciiValue
+		^ <CharacterToInteger self>
+|
+	asLowercase
+		^ <IsUpper self>
+			ifTrue:  [<ChangeCase self>]
+			ifFalse: [self]
+|
+	asUppercase
+		^ <IsLower self>
+			ifTrue:  [<ChangeCase self>]
+			ifFalse: [self]
+|
+	asString
+		^ <CharacterToString self>
+|
+	compareError
+		^ self error: 'char cannot be compared to non char'
+|
+	digitValue		| i |
+		((i <- <DigitValue self>) isNil)
+			ifTrue: [self error: 'digitValue on nondigit char'].
+		^ i
+|
+	isAlphaNumeric
+		^ <IsAlnum self>
+|
+	isDigit
+		^ self between: $0 and: $9
+|
+	isLetter
+		^ self isLowercase or: [self isUppercase]
+|
+	isLowercase
+		^ self between: $a and: $z 
+|
+	isSeparator
+		^ <IsSpace self>
+|
+	isUppercase
+		^ (self between: $A and: $Z)
+|
+	isVowel
+		^ <IsVowel self>
+|
+	printString
+		^ '$' , <CharacterToString self>
+]
+Class Float :Number
+[
+	= aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatEquality self aNumber>]
+			ifFalse: [super = aNumber]
+|
+	< aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatLessThan self aNumber>]
+			ifFalse: [super < aNumber]
+|
+	> aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatGreaterThan self aNumber>]
+			ifFalse: [ super > aNumber]
+|
+	+ aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatAddition self aNumber>]
+			ifFalse: [super + aNumber]
+|
+	- aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatSubtraction self aNumber>]
+			ifFalse: [super - aNumber]
+|
+	* aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatMultiplication self aNumber>]
+			ifFalse: [super * aNumber]
+|
+	/ aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<FloatDivision self aNumber>]
+			ifFalse: [super / aNumber]
+|
+	^ aNumber
+		^ <SameTypeOfObject self aNumber>
+			ifTrue:  [<Power self aNumber>]
+			ifFalse: [super raisedTo: aNumber]
+|
+	arcCos
+		^ Radian new: <ArcCos self>
+|
+	arcSin
+		^ Radian new: <ArcSin self>
+|
+	arcTan
+		^ Radian new: <ArcTan self>
+|
+	asFloat
+		^ self
+|
+	asString
+		^ <FloatToString self>
+|
+	ceiling
+		^ <Ceiling self>
+|
+	coerce: aNumber
+		^ aNumber asFloat
+|
+	exp
+		^ <Exponent self>
+|
+	floor
+		^ <Floor self>
+|
+	fractionPart
+		^ <FractionalPart self>
+|
+	gamma
+		^ <Gamma self>
+|
+	integerPart
+		^ <IntegerPart self>
+|
+	ln
+		^ <Log self>
+|
+	radix: aNumber
+		^ <FloatRadixPrint self aNumber>
+|
+	rounded
+		^ <Floor (self + 0.5)>
+|
+	sqrt
+		^ <SquareRoot self>
+|
+	truncated
+		^ (self < 0.0)  ifTrue:  [<Ceiling self>]
+				ifFalse: [<Floor self>]
+]
+Class Radian :Magnitude
+| value |
+[
+        new: x
+                value <- <NormalizeRadian (x asFloat) >
+
+|	< arg
+		^ value < arg asFloat
+
+|	= arg
+		^ value = arg asFloat
+
+|       sin
+                ^ <Sin value>
+
+|       cos
+                ^ <Cos value>
+
+|       tan
+                ^ <Sin value> / <Cos value>
+
+|       asFloat
+                ^ value
+
+|       printString
+                ^ value asString , ' radians'
+]
+Class Point :Magnitude
+| xvalue yvalue |
+[
+	< aPoint
+		^ (xvalue < aPoint x) and: [yvalue < aPoint y]
+|
+	<= aPoint
+		^ (xvalue <= aPoint x) and: [yvalue < aPoint y]
+|
+	>= aPoint
+		^ (xvalue >= aPoint x) and: [yvalue >= aPoint y]
+|
+	= aPoint
+		^ (xvalue = aPoint x) and: [yvalue = aPoint y]
+|
+	* scale
+		^ (Point new x: (xvalue * scale)) y: (yvalue * scale)
+|
+	+ delta
+		^ (Point new x: (xvalue + delta x)) y: (yvalue + delta y)
+|
+	- delta
+		^ (Point new x: (xvalue - delta x)) y: (yvalue - delta y)
+|
+	/ scale
+		^ (Point new x: (xvalue / scale)) y: (yvalue / scale)
+|
+	// scale
+		^ (Point new x: (xvalue // scale)) y: (yvalue // scale)
+|
+	abs
+		^ (Point new x: xvalue abs) y: (yvalue abs)
+|
+	asString
+		^ xvalue asString , ' @ ' , (yvalue asString)
+|
+	dist: aPoint
+		^ ((xvalue - aPoint x) squared + 
+			(yvalue - aPoint y) squared) sqrt
+|
+	max: aPoint
+		^ (Point new x: (xvalue max: aPoint x))
+			y: (yvalue max: aPoint y)
+|
+	min: aPoint
+		^ (Point new x: (xvalue min: aPoint x))
+			y: (yvalue min: aPoint y)
+|
+	printString
+		^ xvalue printString , ' @ ' , (yvalue printString)
+|
+	transpose
+		^ (Point new x: yvalue) y: xvalue
+|
+	x
+		^ xvalue
+|
+	x: aValue
+		xvalue <- aValue
+|
+	x: xValue y: yValue
+		xvalue <- xValue.
+		yvalue <- yValue
+|
+	y
+		^ yvalue
+|
+	y: aValue
+		yvalue <- aValue
+]
+Class Random
+| seed |
+[
+        new
+                seed <- 1
+|
+	randomize
+		seed <- <TimeCounter>
+|
+        first
+                ^ <RandomFloat (seed <- <Random seed > ) >
+|
+        next
+                ^ <RandomFloat (seed <- <Random seed > ) >
+|
+	between: low and: high
+		^ (self next * (high - low)) + low
+|
+	randInteger: limit
+		^ (self next * limit) truncated + 1
+|
+	next: n			| newa |
+		newa <- Array new: n.
+		(1 to: n) do: [:x | newa at: x put: self next].
+		^ newa
+]
+Class Collection
+[
+        addAll: aCollection
+                aCollection do: [:x | self add: x ]
+
+|
+	asArray
+		^ Array new: self size ;
+			replaceFrom: 1 to: self size with: self
+|
+	asBag
+                ^ Bag new addAll: self
+|
+	asSet
+                ^ Set new addAll: self
+|
+	asList
+                ^ List new addAllLast: self
+|
+	asString
+		^ String new: self size ; 
+			replaceFrom: 1 to: self size with: self
+|
+	coerce: aCollection	| newobj |
+		newobj <- self class new.
+		aCollection do: [:x | newobj add: x].
+		^ newobj
+|
+	collect: aBlock
+		^ self inject: self class new
+		       into: [:x :y | x add: (aBlock value: y). x ]
+|
+	deepCopy		| newobj |
+		newobj <- List new .
+		self do: [:x | newobj addLast: x copy ].
+		^ self coerce: newobj
+|
+	detect: aBlock
+		^ self detect: aBlock
+		ifAbsent: [self error: 'no object found matching detect']
+
+|
+        detect: aBlock ifAbsent: exceptionBlock   
+                self do: [:x | 
+                          (aBlock value: x) ifTrue: [^ x]].
+                ^ exceptionBlock value
+|
+ 	first
+		^ self error: 'subclass should implement first'
+|
+        includes: anObject
+		self do: [:x | (x == anObject) ifTrue: [^ true]].
+		^ false
+|
+        inject: thisValue into: binaryBlock     | last |
+                last <- thisValue.
+                self do: [:x | last <- binaryBlock value: last value: x].
+                ^ last
+|
+        isEmpty
+                ^ (self size = 0)
+|
+	occurrencesOf: anObject
+		^ self inject: 0
+                       into: [:x :y | (y = anObject) 
+                                         ifTrue: [x + 1]
+                                         ifFalse: [x] ]
+|
+	printString
+		^ ( self inject: self class printString , ' ('
+			 into: [:x :y | x , ' ' , y printString]), ' )'
+|
+	reject: aBlock          
+		^ self select: [:x | (aBlock value: x) not ]
+|
+        remove: oldObject
+                self remove: oldObject ifAbsent:
+                  [^ self error: 
+			'attempt to remove object not found in collection' ].
+                ^ oldObject
+|
+	remove: oldObject ifAbsent: exceptionBlock
+		^ (self includes: oldObject)
+			ifTrue: [self remove: oldObject]
+			ifFalse: exceptionBlock
+|
+	select: aBlock          
+		^ self inject: self class new
+		       into: [:x :y | (aBlock value: y) 
+                                        ifTrue: [x add: y]. x]
+|
+	shallowCopy		| newobj |
+		newobj <- List new .
+		self do: [:x | newobj addLast: x].
+		^ self coerce: newobj
+|
+	size		| i |
+		i <- 0.
+		self do: [:x | i <- i + 1 ].
+		^ i
+]
+Class Bag :Collection
+| dict count |
+[
+        new
+                dict <- Dictionary new
+
+|       add: newElement
+                dict at: newElement 
+                     put: (1 + (dict at: newElement ifAbsent: [0]))
+
+|       add: newObj withOccurrences: anInteger
+                anInteger timesRepeat: [ self add: newObj ].
+                ^ newObj
+
+|       remove: oldElement ifAbsent: exceptionBlock   | i |
+                i <- dict at: oldElement 
+                          ifAbsent: [ ^ exceptionBlock value].
+                (1 = i) ifTrue:  [dict removeKey: oldElement]
+                        ifFalse: [dict at: oldElement put: i - 1 ]
+
+|       size
+                ^ dict inject: 0 into: [:x :y | x + y]
+
+|       occurrencesOf: anElement
+                ^ dict at: anElement ifAbsent: [0]
+
+|       first
+		(count <- dict first) isNil ifTrue: [^ nil].
+		count <- count - 1.
+		^ dict currentKey
+
+|       next
+		[count notNil] whileTrue:
+		   [ (count > 0)
+		        ifTrue: [count <- count - 1. ^ dict currentKey]
+			ifFalse: [(count <- dict next) isNil
+					ifTrue: [^ nil] ]].
+		^ nil
+
+]
+Class Set :Collection
+| list |
+[
+        new
+                list <- List new
+
+|       add: newElement
+		(list includes: newElement)
+			ifFalse: [list add: newElement]
+
+|       remove: oldElement ifAbsent: exceptionBlock
+		list remove: oldElement ifAbsent: exceptionBlock
+
+|       size
+                ^ list size
+
+|       occurrencesOf: anElement
+                ^ (list includes: anElement) ifTrue: [1] ifFalse: [0]
+
+|       first
+                ^ list first
+
+|       next
+                ^ list next
+]
+Class KeyedCollection :Collection
+[
+	add: anElement
+		^ self error: 'Must add with explicit key'
+|
+	addAll: aCollection
+                aCollection binaryDo: [:x :y | self at: x put: y].
+                ^ aCollection
+|
+	asDictionary			| newCollection |
+		newCollection <- Dictionary new.
+		self binaryDo: 
+			[:key :val | newCollection at: key put: val].
+		^ newCollection
+|
+	at: key
+                ^ self at: key ifAbsent:
+                   [self error:
+                         (key printString , ': association not found').
+                    ^ key]
+|
+	atAll: aCollection put: anObject
+		aCollection do: [:x | self at: x put: anObject]
+|
+	binaryDo: aBlock                | item |
+		self do: [:x | aBlock value: self currentKey
+					value: x ].
+                ^ nil
+|
+	coerce: aCollection	| newobj |
+		newobj <- self class new.
+		aCollection binaryDo: [:x :y | newobj at: x put: y].
+		^ newobj
+|
+	collect: aBlock 
+		^ self coerce:
+		     (self inject: Dictionary new
+                           into: [:x :y | x at: self currentKey
+					    put: (aBlock value: y) . x ] )
+|
+	includesKey: key
+                self at: key ifAbsent: [^ false].
+                ^ true
+|
+	indexOf: anElement
+		^ self indexOf: anElement
+		ifAbsent: [self error: 'indexOf element not found']
+|
+	indexOf: anElement ifAbsent: exceptionBlock
+                self do: [:x | (x = anElement) 
+  				  ifTrue: [ ^ self currentKey ]].
+                 ^ exceptionBlock value
+|
+	keys                             | newset |
+                newset <- Set new.
+                self keysDo: [:x | newset add: x].
+                ^ newset
+|
+	keysDo: aBlock
+                ^ self do: [ :x | aBlock value: self currentKey ]
+|
+	keysSelect: aBlock          
+		^ self coerce:
+		     (self inject: Dictionary new
+                           into: [:x :y | (aBlock value: y currentKey)
+                                           ifTrue: [x at: self currentKey
+                                                      put: y]. x ] )
+|
+	remove: anElement
+		^ self error: 'object must be removed with explicit key'
+|
+	removeKey: key
+                ^ self removeKey: key ifAbsent:
+                   [self error: 'no element associated with key'. ^ key]
+|
+	removeKey: key ifAbsent: exceptionBlock
+		^ self error: 'subclass should implement RemoveKey:ifAbsent:'
+|
+	select: aBlock          
+		^ self coerce:
+		     (self inject: Dictionary new
+                           into: [:x :y | (aBlock value: y)
+                                           ifTrue: [x at: self currentKey
+                                                      put: y]. x ] )
+|
+	values                           | newbag |
+                newbag <- Bag new.
+                self do: [:x | newbag add: x].
+                ^ newbag
+]
+"
+	Dictionarys are implemented using Points in order to reduce
+	the number of classes in the standard prelude
+
+	this also has the advantage of making the output appear in
+		key @ value
+	form
+"
+Class Dictionary :KeyedCollection
+| hashTable currentBucket currentList |
+[
+	new
+		hashTable <- Array new: 17
+|
+	hashNumber: aKey
+		^ ( <HashNumber aKey> \\ hashTable size) + 1
+|
+	getList: aKey			| list bucketNumber |
+		bucketNumber <- self hashNumber: aKey.
+		list <- hashTable at: bucketNumber.
+		(list isNil)
+			ifTrue: [list <- List new.
+				 hashTable at: bucketNumber put: list].
+		^ list
+
+|
+	at: aKey put: anObject			| list anAssoc |
+
+		list <- self getList: aKey.
+		anAssoc <- self findAssociation: aKey inList: list.
+		(anAssoc isNil)
+			ifTrue:  [anAssoc <- (Point new x: aKey) y: anObject.
+				  list add: anAssoc]
+			ifFalse: [anAssoc y: anObject].
+		^ anObject
+|
+	at: aKey ifAbsent: exceptionBlock	| list anAssoc | 
+
+		list <- self getList: aKey.
+		anAssoc <- self findAssociation: aKey inList: list.
+		(anAssoc isNil)
+			ifTrue: [^ exceptionBlock value].
+		^ anAssoc y
+|
+	removeKey: aKey ifAbsent: exceptionBlock 	| list anAssoc|
+		
+		list <- self getList: aKey.
+		anAssoc <- self findAssociation: aKey inList: list.
+		(anAssoc isNil)
+			ifTrue: [^ exceptionBlock value].
+		^ ( list remove: anAssoc 
+			 ifAbsent: [ ^ exceptionBlock value ] ) y
+|
+	findAssociation: aKey inList: linkedList
+
+		linkedList do: 
+			[:item | (item x = aKey) ifTrue: [^ item]].
+		^ nil
+|
+	first				| item |
+
+		(1 to: 17) do: 
+			[:i | ((item <- self checkBucket: i) notNil)
+						ifTrue: [ ^ item y] ] .
+		^ nil
+|
+	next				| item |
+
+		((item <- currentList next) notNil)
+			ifTrue: [ ^ item y ].
+		[currentBucket < 17] whileTrue:
+			[currentBucket <- currentBucket + 1.
+			 ((item <- self checkBucket: currentBucket) notNil)
+				ifTrue: [ ^ item y ] ].
+		^ nil
+|
+	printString
+		^ (self inject: (self class printString) , ' ( '
+			into: [ :aString :aValue |
+				aString , self currentKey printString ,
+					' @ ' , aValue printString , ' ' ]
+			) , ')'
+|
+	currentKey	| clist|
+		^ (currentList notNil) 
+			ifTrue: [clist <- currentList current.
+				 (clist notNil) ifTrue: [clist x]
+			        ]
+|
+	checkBucket: bucketNumber
+
+		((currentList <- hashTable at: 
+				(currentBucket <- bucketNumber)) isNil)
+			ifTrue: [ ^ nil ].
+		^ currentList first
+]
+Class SequenceableCollection :KeyedCollection
+[
+	, aCollection
+		^ self coerce: (List new ; 
+					addAllLast: self ;
+					addAllLast: aCollection )
+|
+        collect: aBlock 
+		^ self coerce:
+		     (self inject: List new
+                           into: [:x :y | x addLast: (aBlock value: y) . x ] )
+|
+	copyFrom: start to: stop                | newcol |
+                newcol <- List new.
+		(start to: stop) do: [:i | newcol addLast: (self at: i)].
+                ^ self coerce: newcol
+|
+	copyWith: newElement
+		^ self coerce: (List new ; 
+					addAllLast: self ;
+					addLast: newElement )
+|
+	copyWithout: oldElement                 | newcol |
+                newcol <- List new.
+                self do: [ :x | (x == oldElement) 
+                                ifFalse: [ newcol addLast: x ]].
+                ^ self coerce: newcol
+|
+	equals: aSubCollection startingAt: anIndex      | i |
+                i <- 0.
+                self do: [:x |
+                        (x = (aSubCollection at: (anIndex + i)
+                                            ifAbsent: [^ false]))
+                                ifFalse: [^ false].
+                        i <- i + 1].
+                ^ true
+|
+	findFirst: aBlock
+		^ self findFirst: aBlock 
+			ifAbsent: [self error: 'first element not found']
+|
+	findFirst: aBlock ifAbsent: exceptionBlock
+                self do: [:x | (aBlock value: x) 
+				ifTrue: [ ^ self currentKey]].
+                ^ exceptionBlock value
+|
+	findLast: aBlock
+		self findLast: aBlock
+			ifAbsent: [self error: 'last element not found']
+|
+	findLast: aBlock ifAbsent: exceptionBlock
+                self reverseDo: [:x | (aBlock value: x) 
+                                        ifTrue: [ ^ self currentKey]].
+                ^ exceptionBlock value
+|
+	indexOfSubCollection: aSubCollection 
+	startingAt: anIndex 
+	ifAbsent: exceptionBlock  			| n m |
+
+                n <- anIndex.
+                m <- self size - aSubCollection size.
+                [n <= m] whileTrue:
+                        [(aSubCollection equals: self startingAt: n)
+                                ifTrue: [^ n].
+                         n <- n + 1].
+                ^ exceptionBlock value
+|
+	indexOfSubCollection: aSubCollection startingAt: anIndex
+                ^ self indexOfSubCollection: aSubCollection 
+		       startingAt: anIndex
+                       ifAbsent: [ self error: 'element not found'. nil]
+|
+	last
+                ^ (0 = self size) ifFalse: [ self at: self lastKey ]
+|
+	replaceFrom: start to: stop with: repcol
+		repcol inject: start
+		       into: [:x :y | self at: x put: y. x + 1]
+|
+	replaceFrom: first to: stop with: repcol startingAt: repStart | i |
+                i <- 0 .
+                [(first + i) <= stop] whileTrue:
+                        [self at: (first + i)
+                              put: (repcol at: i + repStart).
+			 i <- i + 1 ]
+|
+        reverseDo: aBlock                       | n m |
+                n <- self lastKey.  m <- self firstKey.
+                [n >= m] whileTrue:
+                        [(self includesKey: n) ifTrue:
+                                [aBlock value: (self at: n)].
+                         n <- n - 1].
+                ^ nil
+|
+	reversed                | newar i |
+                newar <- Array new: (i <- self size).
+                self do: [:x | newar at: i put: x. i <- i - 1].
+                ^ self coerce: newar
+|
+	select: aBlock          
+		^ self coerce:
+		     (self inject: List new
+                           into: [:x :y | (aBlock value: y)
+                                           ifTrue: [x addLast: y]. x ] )
+|
+	sort
+		^ self sort: [:x :y | x <= y]
+|
+	sort: sortBlock		| index temp newArray |
+		newArray <- self asArray.
+		(2 to: newArray size) do:
+		  [ :highIndex | index <- highIndex - 1.
+			[(index >= 1) and:
+			   [(sortBlock value: (newArray at: index)
+				      value: (newArray at: (index + 1))) not]]
+			   whileTrue: [temp <- newArray at: index.
+				       newArray at: index 
+						put: (newArray at: index + 1).
+				       newArray at: index + 1 put: temp.
+				       index <- index - 1 ]].
+		^ self coerce: newArray
+
+|
+	with: aSequenceableCollection do: aBlock        | arg1 arg2 |
+                arg1 <- self first. arg2 <- aSequenceableCollection first.
+                [ arg1 notNil] whileTrue:
+                        [ aBlock value: arg1 value: arg2.
+                          arg1 <- self next.
+                          arg2 <- aSequenceableCollection next].
+                ^ nil
+
+]
+Class Interval :SequenceableCollection
+| lower upper step current |
+[
+	from: lowerBound to: upperBound by: stepSize
+		current <- lower <- lowerBound.
+		upper <- upperBound.
+		step  <- stepSize
+
+|	size	
+		^ ((step strictlyPositive)
+			ifTrue: [upper < lower]
+			ifFalse: [lower < upper] )
+		   ifTrue: [ 0 ]
+		   ifFalse: [upper - lower // step + 1]
+
+|	inRange: value
+		^ (step strictlyPositive)
+			ifTrue: [(value >= lower) and: [value <= upper]]
+			ifFalse: [(value >= upper) and: [value <= lower]]
+
+|       first
+                current <- lower.
+		^ (self inRange: current) ifTrue: [current]
+
+|       next
+                current <- current + step.
+		^ (self inRange: current) ifTrue: [current]
+
+|	at: index ifAbsent: exceptionBlock	| val |
+		val <- lower + (step * (index - 1)).
+		^ (self inRange: val)
+		   ifTrue: [ val ]
+		   ifFalse: [exceptionBlock value]
+
+|	printString
+		^ 'Interval ', lower printString , ' to ',
+                     upper printString , ' by ' , step printString 
+
+|	coerce: newcollection
+		^ newcollection asArray
+
+|	at: index put: val
+		^ self error: 'cannot store into Interval'
+
+|	add: val
+		^ self error: 'cannot store into Interval'
+
+|	removeKey: key ifAbsent: exceptionBlock
+		self error: 'cannot remove from Interval'.
+		^ exceptionBlock value
+|
+	deepCopy
+		^ lower to: upper by: step
+|	
+	shallowCopy
+		^ lower to: upper by: step
+]
+"
+	Lists are implemented using Points in order to
+	reduce the number of classes in the standard prelude
+"
+Class List :SequenceableCollection
+| first current |
+[
+	add: anItem
+		first <- (Point new x: anItem ) y: first .
+		^ anItem
+|
+	addFirst: anItem
+		first <- (Point new x: anItem ) y: first .
+		^ anItem
+|
+	addLast: anItem
+		(first isNil) 
+			ifTrue: [^ self addFirst: anItem].
+		(self findLast) y: ((Point new x: anItem) y: nil).
+		^ anItem
+|
+	addAllFirst: aCollection
+		aCollection do: [:x | self addFirst: x]
+|	
+	addAllLast: aCollection
+		aCollection do: [:x | self addLast: x]
+|
+	coerce: aCollection		| newList |
+		newList <- List new.
+		aCollection do: [:x | newList addLast: x].
+		^ newList
+|
+	findLast		| item |
+		((item <- first) isNil)
+			ifTrue: [^ nil].
+		[(item y) notNil]
+			whileTrue: [item <- item y].
+		^ item
+|
+	remove: anItem
+		^ self remove: anItem 
+			ifAbsent: [self error: 'cant find item']
+|
+	remove: anItem ifAbsent: exceptionBlock
+		(first isNil) 
+			ifTrue: [^ exceptionBlock value].
+		self inject: nil into: [:prev :current |
+			(current x == anItem)
+				ifTrue: [(prev isNil)
+						ifTrue: [first <- current y]
+						ifFalse: [prev y: (current y)].
+					 ^ anItem].
+			current ] .
+		^ exceptionBlock value
+|
+	removeError
+		^ self error: 'cannot remove from an empty list'
+|
+	removeFirst	| item |
+		(first isNil)
+			ifTrue: [^ self removeError].
+		item <- first.
+		first <- first y.
+		^ item x
+|
+	removeLast
+		(first isNil)
+			ifTrue: [^ self removeError].
+		^ self remove: self last 
+			ifAbsent: [self removeError]
+|
+	first
+		^ ((current <- first) notNil) 
+			ifTrue: [ current x ]
+|
+	next
+		^ ((current <- current y) notNil)
+			ifTrue: [ current x ]
+|
+	current
+		^ current x
+|
+	last
+		(first isNil) 
+			ifTrue: [^ nil].
+		^ self findLast x
+|
+	isEmpty
+		^ first == nil
+]
+Class ArrayedCollection :SequenceableCollection
+| current |
+[
+       = anArray                       | i |
+                (self size ~= anArray size) ifTrue: [^ false].
+                i <- 0.
+                self do: [:x | (x ~= (anArray at: (i <- i + 1)))
+                                ifTrue: [^ false]].
+		^ true
+|
+        at: key ifAbsent: exceptionBlock
+		((key <= 0) or: [key > self size])
+			ifTrue: [^ exceptionBlock value].
+                ^ self at: key
+|
+	coerce: aCollection		| temp |
+		temp <- self class new: aCollection size.
+		temp replaceFrom: 1 to: aCollection size with: aCollection.
+		^ temp
+|
+       copyFrom: start to: stop                | size temp |
+		size <- stop - start + 1.
+		temp <- self class new: size.
+		temp replaceFrom: 1 to: size with: self startingAt: start.
+		^ temp
+|
+        currentKey
+                ^ current
+| 
+	deepCopy		| newobj |
+		newobj <- self class new: self size.
+		(1 to: self size) do:
+			[:i | newobj at: i
+				put: (self at: i) copy ].
+		^ newobj
+|
+       do: aBlock
+                (1 to: self size) 
+		    do: [:i | current <- i. 
+				aBlock value: (self at: i)]
+|
+       first
+                current <- 1.
+                ^ (current <= self size) 
+			ifTrue: [ self at: current]
+|
+	firstKey
+		^ 1
+|
+	lastKey
+		^ self size
+|
+	next
+                current <- current + 1.
+                ^ (current <= self size) 
+			ifTrue: [ self at: current]
+|
+	padTo: length
+		^ (self size < length)
+			ifTrue: [ self , 
+				(self class new: (length - self size) ) ]
+			ifFalse: [ self ]
+|
+	shallowCopy		| newobj |
+		newobj <- self class new: self size.
+		(1 to: self size) do:
+			[:i | newobj at: i 
+				put: (self at: i) ].
+		^ newobj
+]
+Class File :SequenceableCollection
+[
+	modeCharacter
+		<FileSetMode self 0>
+|
+	modeInteger
+		<FileSetMode self 2>
+|
+	modeString
+		<FileSetMode self 1>
+|
+	at: aPosition
+		<FileSetPosition self aPosition>.
+		^ self read
+|
+	at: aPosition put: anObject
+		<FileSetPosition self aPosition>.
+		^ self write: anObject
+|
+	currentKey
+		^ <FileFindPosition self>
+|
+	first
+		^ self at: 0
+|
+	next
+		^ self read
+|
+	open: aName
+		<FileOpen self aName 'r' >
+|
+	open: aName for: opType
+		<FileOpen self aName opType >
+|
+	read
+		^ <FileRead self>
+|
+	size
+		^ <FileSize self>
+|
+	write: anObject
+		^ <FileWrite self anObject>
+]
+Class ByteArray :ArrayedCollection
+[
+	new: size
+		^ <NewByteArray size>
+|
+	at: index
+		^ <ByteArrayAt self index>
+|
+	at: index put: value
+		<ByteArrayAtPut self index value>
+|
+	printString	| str |
+		str <- '#[ '.
+		(1 to: self size)
+			do: [:i | str <- str , (self at: i) printString , ' '].
+		^ str , ']'
+|
+	size
+		^ <ByteArraySize self>
+]
+
+Class  Semaphore :List
+| excessSignals |
+
+[  new
+	excessSignals <- 0
+
+|  new: aNumber
+	excessSignals <- aNumber
+
+|  signal
+	<StartAtomic>.	"start atomic action"
+	(self isEmpty)
+	  ifTrue: [excessSignals <- excessSignals + 1]
+	  ifFalse: [self removeFirst unblock].
+	<EndAtomic>		"end atomic action"
+
+|  wait
+	<StartAtomic>.	"start atomic actions"
+	(excessSignals = 0)
+	  ifTrue: [self addLast: selfProcess.
+		   selfProcess block]
+	  ifFalse: [excessSignals <- excessSignals - 1].
+	<EndAtomic>		"end atomic actions"
+]
+Class  Process
+
+[  block
+	(self state == #TERMINATED)
+	    ifTrue: [self termErr: 'block'.  ^ nil].
+	<SetProcessState  self 2>.
+	^ self state
+
+|  resume
+	(self state == #TERMINATED)
+	    ifTrue: [self termErr: 'resume'.  ^ nil].
+	<SetProcessState  self 0>.
+	^ self state
+
+|  suspend
+	(self state == #TERMINATED)
+	    ifTrue: [self termErr: 'suspend'.  ^ nil].
+	<SetProcessState  self 1>.
+	^ self state
+
+|  state  | pstate |
+	pstate <- <ReturnProcessState  self>.
+	(pstate = 0) ifTrue: [pstate <- #READY.  ^ pstate].
+	(pstate = 1) ifTrue: [pstate <- #SUSPENDED.  ^ pstate].
+	(pstate = 2) ifTrue: [pstate <- #BLOCKED.  ^ pstate].
+	(pstate = 3) ifTrue: [pstate <- #BLOCKED.  ^ pstate].
+	(pstate >= 4) ifTrue: [pstate <- #TERMINATED.  ^ pstate]
+
+|  terminate
+	<Terminate self>.
+	^ self state
+
+|  termErr: msgName
+	('Cannot ',msgName,' a terminated process.') print
+
+|  unblock
+	(self state == #TERMINATED)
+	    ifTrue: [self termErr: 'unblock'.  ^ nil].
+	<SetProcessState  self 3>.
+	^ self state
+
+|  yield
+	^ nil
+]
+Class Smalltalk :Dictionary
+[
+	clearScreen
+		<Clear>
+|
+	date
+		^ <CurrentTime >
+|
+	debug: n
+		^ <Debug 2 n>
+|
+	display
+		^ <Debug 1 1>
+|
+	displayAssign
+		^ <Debug 1 2>
+|
+	doPrimitive: primNumber withArguments: argArray
+		^ <DoPrimitive primNumber argArray>
+|
+	getString
+		^ <primitive 163>
+|
+	noDisplay
+		^ <Debug 1 0>
+|
+	perform: aMessage withArguments: argArray
+		^ <Perform argArray aMessage >
+|
+	sh: command
+		^ <System command >
+|
+	time: aBlock		| start |
+		start <- <TimeCounter>.
+		aBlock value.
+		^ <TimeCounter> - start
+]

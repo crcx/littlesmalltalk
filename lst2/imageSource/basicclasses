@@ -1,0 +1,1065 @@
+*
+* Little Smalltalk, version 2
+* Written by Tim Budd, Oregon State University, July 1987
+*
+* basic classes common to all images
+*
+Declare Object
+Declare Block Object context argumentCounter argumentLocation bytecodeCounter creatingInterpreter
+Declare Boolean Object
+Declare   True Boolean
+Declare   False Boolean
+Declare Class Object name size methods superClass variables icon
+Declare Context Object method methodClass arguments temporaries
+Declare Link Object key value nextLink
+Declare Magnitude Object
+Declare    Char Magnitude value
+Declare    Collection Magnitude
+Declare       IndexedCollection Collection
+Declare          Array IndexedCollection
+Declare             ByteArray Array
+Declare                String ByteArray
+Declare          Dictionary IndexedCollection
+Declare       Interval Collection lower upper step
+Declare       List Collection links
+Declare          Set List
+Declare    Number Magnitude
+Declare       Integer Number
+Declare       Float Number
+Declare Method Object text message bytecodes literals stackSize temporarySize
+Declare Process Object interpreter nextProcess state
+Declare Random Object
+Declare Smalltalk Object
+Declare Symbol Object
+Declare UndefinedObject Object
+*
+Instance Smalltalk smalltalk
+Instance True true
+Instance False false
+*
+Class Object
+	== aValue
+		^ <21 self aValue>
+|
+	= aValue
+		^ self == aValue
+|
+	basicAt: index
+		^ <25 self index>
+|
+	basicAt: index put: value
+		^ <31 self index value>
+|
+	basicSize
+		^ <12 self>
+|
+	class
+		^ <11 self>
+|
+	hash
+		^ <13 self>
+|
+	isMemberOf: aClass
+		^ self class == aClass
+|
+	isNil
+		^ false
+|
+	isKindOf: aClass	| myClass |
+		myClass <- self class.
+		[ myClass notNil ] whileTrue:
+			[ (myClass == aClass) ifTrue: [ ^ true ].
+			   myClass <- myClass superClass ].
+|
+	notNil
+		^ true
+|
+	print
+		^ self printString print
+|
+	printString
+		^ self class printString
+]
+Class Array
+	< coll
+		(coll isKindOf: Array)
+			ifTrue: [ self with: coll 
+				   do: [:x :y | (x < y) ifTrue: [ ^ true ]].
+				  ^ self size < coll size ]
+			ifFalse: [ ^ super < coll ]
+|
+	= coll
+		(coll isKindOf: Array)
+			ifTrue: [ (self size = coll size)
+					ifFalse: [ ^ false ].
+				  self with: coll
+					do: [:x :y | (x = y) 
+						ifFalse: [ ^ false ] ]. 
+				 ^ true ]
+			ifFalse: [ ^ super < coll ]
+|
+	at: index put: value
+		(self includesKey: index)
+			ifTrue: [ self basicAt: index put: value ]
+			ifFalse: [ smalltalk error: 
+				'illegal index to at:put: for array' ]
+|
+	binaryDo: aBlock
+		(1 to: self size) do:
+			[:i | aBlock value: i value: (self at: i) ]
+|
+	do: aBlock
+		(1 to: self size) do:
+			[:i | aBlock value: (self at: i) ]
+|
+	exchange: a and: b	| temp |
+		temp <- self at: a.
+		self at: a put: (self at: b).
+		self at: b put: temp
+|
+	includesKey: index
+		^ index between: 1 and: self size
+|
+	size
+		^ self basicSize
+|
+	sort
+		^ self sort: [:a :b | a < b ]
+|
+	sort: sortBlock
+		(self size to: 2 by: -1 ) do:
+		  [:high | (1 to: high - 1) do:
+		     [:index | (sortBlock value: (self at: index)
+				value: (self at: high))
+				ifFalse: [ self exchange: index and: high ] ] ]
+|
+	with: coll do: aBlock
+		(1 to: (self size min: coll size))
+			do: [:i | aBlock value: (self at: i) 
+					value: (coll at: i) ]
+]
+Class Block
+	value
+		^ context executeFrom: bytecodeCounter
+|
+	value: x
+		context temporaries at: argumentLocation put: x.
+		^ context executeFrom: bytecodeCounter
+|
+	value: x value: y	| temps |
+		temps <- context temporaries.
+		temps at: argumentLocation put: x.
+		temps at: argumentLocation + 1 put: y.
+		^ context executeFrom: bytecodeCounter
+|
+	value: x value: y value: z	| temps |
+		temps <- context temporaries.
+		temps at: argumentLocation put: x.
+		temps at: argumentLocation + 1 put: y.
+		temps at: argumentLocation + 2 put: z.
+		^ context executeFrom: bytecodeCounter
+|
+	whileTrue: aBlock
+		( self value ) ifTrue:
+			[ aBlock value. 
+				[ self value ] whileTrue: [ aBlock value ] ]
+]
+Class Boolean
+	ifTrue: trueBlock
+		^ self ifTrue: [ trueBlock value ] ifFalse: [ nil ]
+|
+	ifFalse: falseBlock
+		^ self ifTrue: [ nil ] ifFalse: [ falseBlock value ]
+|
+	ifFalse: falseBlock ifTrue: trueBlock
+		^ self ifTrue: [ trueBlock value ]
+			ifFalse: [ falseBlock value ]
+|
+	and: aBlock
+		self ifTrue: [ ^ aBlock value ].
+		^ false
+|
+	or: aBlock
+		self ifFalse: [ ^ aBlock value ].
+		^ true
+]
+Class ByteArray
+	asString
+		<22 self String>
+|
+	basicAt: index put: value
+		^ <32 self index value >
+|
+	basicAt: index
+		^ <26 self index>
+|
+	size: value
+		^ <22 <59 value> ByteArray>
+|
+	size
+		^ self basicSize * 2
+]
+Class Char
+	< aValue
+		^ (aValue isMemberOf: Char)
+			ifTrue: [ value < aValue asciiValue ]
+			ifFalse: [ smalltalk error: 'char compared to nonchar']
+|
+	== aValue
+		^ (aValue isMemberOf: Char)
+			ifTrue: [ value = aValue asciiValue ]
+			ifFalse: [ false ]
+|
+	= aValue
+		^ self == aValue
+|
+	asciiValue
+		^ value
+|
+	asString
+		^ ' ' copy; at: 1 put: self
+|
+	digitValue
+		^ value - 48
+|
+	isAlphabetic
+		^ (self isLowercase) or: [ self isUppercase ]
+|
+	isAlphaNumeric
+		^ (self isAlphabetic) or: [ self isDigit ]
+|
+	isBlank
+		^ value = 32
+|
+	isDigit
+		^ value between: 48 and: 57
+|
+	isLowercase
+		^ value between: 97 and: 122
+|
+	isUppercase
+		^ value between: 65 and: 90
+|
+	value: aValue		" private - used for initializatin "
+		value <- aValue
+|
+	printString
+		^ '$', value asCharacter
+]
+Class Class
+	new		| newObject |
+		newObject <- self new: size.
+		(self == Class)
+			ifTrue: [ newObject initialize ]
+			ifFalse: [(methods includesKey: #new )
+					ifTrue: [ ^ newObject new ]].
+		^ newObject
+|
+	new: size	" hack out block the right size and class "
+		^ < 22 < 58 size > self >
+|
+	initialize
+		superClass <- Object.
+		size <- 0.
+		methods <- Dictionary new
+|
+	name: aString
+		name <- aString
+|
+	methods
+		^ methods
+|
+	objectSize
+		^ size
+|
+	printString
+		^ name asString
+|
+	respondsTo: message
+		^ methods includesKey: message
+|
+	superClass
+		^ superClass
+|
+	superClass: aClass
+		superClass <- aClass
+|
+	variables
+		^ variables
+|
+	variables: nameArray
+		variables <- nameArray.
+		size <- superClass objectSize + nameArray size
+]
+Class Collection
+	< coll
+		self do: [:x | (coll includes: x) ifFalse: [ ^ false ]].
+		^ true
+|
+	= coll
+		self do: [:x | (self occurrencesOf: x) = 
+				(coll occurrencesOf: x) ifFalse: [ ^ false ] ].
+		^ true
+|
+	asArray		| newArray i |
+		newArray <- Array new: self size.
+		i <- 0.
+		self do: [:x | i <- i + 1. newArray at: i put: x].
+		^ newArray
+|
+	asByteArray	| newArray i |
+		newArray <- ByteArray new size: self size.
+		i <- 0.
+		self do: [:x | i <- i + 1. newArray at: i put: x].
+		^ newArray
+|
+	asSet
+		^ Set new addAll: self
+|
+	asString
+		^ self asByteArray asString
+|
+	detect: aBlock
+		^ self detect: aBlock
+		ifAbsent: [ smalltalk  error: 'no object found matching detect']
+
+|
+        detect: aBlock ifAbsent: exceptionBlock   
+                self do: [:x | 
+                          (aBlock value: x) ifTrue: [^ x ] ].
+                ^ exceptionBlock value
+|
+	includes: value
+		self do: [:x | (x = value) ifTrue: [ ^ true ] ].
+		^ false
+|
+        inject: thisValue into: binaryBlock     | last |
+                last <- thisValue.
+                self do: [:x | last <- binaryBlock value: last value: x].
+                ^ last
+|
+	isEmpty 
+		^ self size == 0
+|
+	occurrencesOf: anObject
+		^ self inject: 0
+                       into: [:x :y | (y = anObject) 
+                                         ifTrue: [x + 1]
+                                         ifFalse: [x] ]
+|
+	printString
+		^ ( self inject: self class printString , ' ('
+			 into: [:x :y | x , ' ' , y printString]), ' )'
+|
+	size
+		^ self inject: 0 into: [:x :y | x + 1]
+]
+Class Context
+	executeFrom: value
+		^ <28 self value>
+|
+	method: value
+		method <- value
+|
+	arguments: value
+		arguments <- value
+|
+	temporaries
+		^ temporaries
+|
+	temporaries: value
+		temporaries <- value
+]
+Class Dictionary
+	new
+		^ Dictionary new: 39
+|
+	hash: aKey
+		^ 3 * ((aKey hash) rem: ((self basicSize) quo: 3))
+|
+	at: aKey ifAbsent: exceptionBlock	| hashPosition  link |
+
+		hashPosition <- self hash: aKey.
+		((self basicAt: hashPosition + 1) == aKey)
+			ifTrue: [ ^ self basicAt: hashPosition + 2].
+		link <- self basicAt: hashPosition + 3.
+		(link notNil)
+			ifTrue: [ ^ link at: aKey ifAbsent: exceptionBlock ]
+			ifFalse: [ ^ exceptionBlock value ]
+|
+	at: aKey put: aValue			| hashPosition link |
+
+		hashPosition <- self hash: aKey.
+		((self basicAt: hashPosition + 1) isNil)
+		   ifTrue: [ self basicAt: hashPosition + 1 put: aKey ].
+		((self basicAt: hashPosition + 1) == aKey)
+		   ifTrue: [ self basicAt: hashPosition + 2 put: aValue ]
+		   ifFalse: [ link <- self basicAt: hashPosition + 3.
+			(link notNil)
+				ifTrue: [ link at: aKey put: aValue ]
+				ifFalse: [ self basicAt: hashPosition + 3
+					put: (Link new; key: aKey; value: aValue)]]
+|
+	binaryDo: aBlock
+		(1 to: self basicSize by: 3) do:
+			[:i | (self basicAt: i) notNil
+				ifTrue: [ aBlock value: (self basicAt: i)
+						value: (self basicAt: i+1) ].
+			      (self basicAt: i+2) notNil
+				ifTrue: [ (self basicAt: i+2) 
+						binaryDo: aBlock ] ]
+|
+	includesKey: aKey	| hashPosition link |
+		hashPosition <- self hash: aKey.
+		((self basicAt: hashPosition + 1) == aKey)
+			ifTrue: [ ^ true ].
+		link <- self basicAt: hashPosition + 3.
+		(link notNil)
+			ifTrue: [ ^ link includesKey: aKey ].
+		^ false
+|
+	removeKey: aKey
+		^ self removeKey: aKey
+			ifAbsent: [ smalltalk error: 'remove key not found']
+|
+	removeKey: aKey ifAbsent: exceptionBlock
+		^ (self includesKey: aKey)
+			ifTrue: [ self basicRemoveKey: aKey ]
+			ifFalse [ exceptionBlock value ]
+|
+	basicRemoveKey: aKey		| hashPosition link |
+		hashPosition <- self hash: aKey.
+		((self basicAt: hashPosition + 1) == aKey)
+			ifTrue: [ self basicAt: hashPosition + 1 put: nil.
+				  self basicAt: hashPosition + 2 put: nil]
+			ifFalse: [ link <- self basicAt: hashPosition + 3.
+				(link notNil)
+					ifTrue: [ self basicAt: hashPosition + 3
+							put: (link removeKey: aKey) ]]
+]
+Class Float
+	+ value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <110 self value> ]
+			ifFalse: [ super + value ]
+|
+	- value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <111 self value> ]
+			ifFalse: [ super - value ]
+|
+	< value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <112 self value> ]
+			ifFalse: [ super < value ]
+|
+	= value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <116 self value> ]
+			ifFalse: [ super = value ]
+|
+	* value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <118 self value> ]
+			ifFalse: [ super * value ]
+|
+	/ value
+		^ (value isMemberOf: Float)
+			ifTrue: [ <119 self value> ]
+			ifFalse: [ super / value ]
+|
+	ceiling		| i |
+		i <- self integerPart.
+		^ ((self positive) and: [ self ~= i ])
+			ifTrue: [ i + 1 ]
+			ifFalse: [ i ]
+|
+	coerce: value
+		^ value asFloat
+|
+	exp
+		^ <103 self>
+|
+	floor		| i |
+		i <- self integerPart.
+		^ ((self negative) and: [ self ~= i ])
+			ifTrue: [ i - 1 ]
+			ifFalse: [ i ]
+|
+	fractionalPart
+		^ self - self integerPart
+|
+	logGamma
+		^ <105 self>
+|
+	generality
+		^ 7
+|
+	integerPart
+		^ <106 self>
+|
+	ln
+		^ <102 self>
+|
+	printString
+		^ <101 self>
+|
+	rounded
+		^ (self + 0.5 ) floor
+|
+	sqrt
+		^ <104 self>
+|
+	truncated
+		^ (self < 0.0 ) 
+			ifTrue: [ self ceiling ]
+			ifFalse: [ self floor ]
+]
+Class IndexedCollection
+	addAll: aCollection
+		aCollection binaryDo: [:i :x | self at: i put: x ]
+|
+	asArray	
+		^ Array new: self size ; addAll: self
+|
+	asDictionary
+		^ Dictionary new ; addAll: self
+|
+	at: aKey
+		^ self at: aKey 
+			ifAbsent: [ smalltalk error: 'index to at: illegal' ]
+|
+	at: index ifAbsent: exceptionBlock
+		 ^ (self includesKey: index)
+			ifTrue: [ self basicAt: index ]
+			ifFalse: [ exceptionBlock value ]
+|
+        binaryInject: thisValue into: aBlock     | last |
+                last <- thisValue.
+                self binaryDo: [:i :x | last <- aBlock value: last 
+						value: i value: x].
+                ^ last
+|
+	collect: aBlock
+		^ self binaryInject: Dictionary new
+			into: [:s :i :x | s at: i put: (aBlock value: x).  s]
+|
+	do: aBlock
+		self binaryDo: [:i :x | aBlock value: x ]
+|
+	keys
+		^ self binaryInject: Set new 
+			into: [:s :i :x | s add: i ]
+|
+	indexOf: value
+		^ self indexOf: value
+			ifAbsent: [ smalltalk error: 'index not found']
+|
+	indexOf: value ifAbsent: exceptionBlock
+		self binaryDo: [:i :x | (x == value)
+				ifTrue: [ ^ i ] ].
+		^ exceptionBlock value
+|
+	select: aBlock
+		^ self binaryInject: Dictionary new
+			into: [:s :i :x | (aBlock value: x)
+					ifTrue: [ s at: i put: x ]. s ]
+|
+	values
+		^ self binaryInject: List new
+			into: [:s :i :x | s add: x ]
+]
+Class Integer
+	+ value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <60 self value> ]
+			ifFalse: [ super + value ]
+|
+	- value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <61 self value> ]
+			ifFalse: [ super - value ]
+|
+	< value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <62 self value> ]
+			ifFalse: [ super < value ]
+|
+	= value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <66 self value> ]
+			ifFalse: [ super = value ]
+|
+	* value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <68 self value> ]
+			ifFalse: [ super * value ]
+|
+	/ value		" do it as float "
+		^ self asFloat / value
+|
+	// value	| i |
+		i <- self quo: value.
+		( (i < 0) and: [ (self rem: value) ~= 0] )
+			ifTrue: [ i <- i - 1 ].
+		^ i
+|
+	\\ value
+		^ self * self sign rem: value
+|
+	allMask: value
+		^ value = (self bitAnd: value)
+|
+	anyMask: value
+		^ 0 ~= (self bitAnd: value)
+|
+	asCharacter
+		^ <56 self>
+|
+	asFloat
+		^ <51 self>
+|
+	bitAnd: value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <71 self value > ]
+			ifFalse: [ smalltalk error: 
+				'argument to bit operation must be integer']
+|
+	bitAt: value
+		^ (self bitShift: 1 - value) bitAnd: 1
+|
+	bitInvert
+		^ self bitXor: -1
+|
+	bitOr: value
+		^ (self bitXor: value) bitXor: (self bitAnd: value)
+|
+	bitXor: value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <72 self value > ]
+			ifFalse: [ smalltalk error: 
+				'argument to bit operation must be integer']
+|
+	bitShift: value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <79 self value > ]
+			ifFalse: [ smalltalk error: 
+				'argument to bit operation must be integer']
+|
+	even
+		^ (self rem: 2) = 0
+|
+	factorial	| i |
+		^ (self < 8) 
+			ifTrue: [ i <- 1.
+				  (2 to: self) do: [:x | i <- i * x].
+				  i ]
+			ifFalse: [ (self + 1) asFloat logGamma exp ]
+|
+	gcd: value
+		(value = 0) ifTrue: [ ^ self ].
+		(self negative) ifTrue: [ ^ self negated gcd: value ].
+		(value negative) ifTrue: [ ^ self gcd: value negated ].
+		(value > self) ifTrue: [ ^ value gcd: self ].
+		^ value gcd: (self rem: value)
+|
+	generality
+		^ 2
+|
+	lcm: value
+		^ (self quo: (self gcd: value)) * value
+|
+	odd
+		^ (self rem: 2) ~= 0
+|
+	quo: value
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <69 self value> ]
+			ifFalse: [ smalltalk error: 
+				'argument to quo: must be integer']
+|
+	rem: aValue
+		^ (value isMemberOf: Integer)
+			ifTrue: [ <70 self value> ]
+			ifFalse: [ smalltalk error: 
+				'argument to rem: must be integer']
+|
+	printString
+		^ <57 self>
+|
+	timesRepeat: aBlock	| i |
+		" use while, which is optimized, not to:, which is not"
+		i <- 0.
+		[ i < self ] whileTrue:
+			[ aBlock value. i <- i + 1]
+]
+Class Interval
+	do: aBlock		| current |
+		current <- lower.
+		(step > 0) 
+			ifTrue: [ [ current <= upper ] whileTrue:
+					[ aBlock value: current.
+			  		current <- current + step ] ]
+			ifFalse: [ [ current >= upper ] whileTrue:
+					[ aBlock value: current.
+					current <- current + step ] ]
+|
+	lower: aValue
+		lower <- aValue
+|
+	upper: aValue
+		upper <- aValue
+|
+	step: aValue
+		step <- aValue
+]
+Class Link
+	addLast: aValue
+		(nextLink notNil)
+			ifTrue: [ nextLink addLast: aValue]
+			ifFalse: [ nextLink <- Link new; value: aValue]
+|
+	at: aKey ifAbsent: exceptionBlock
+		(aKey == key)
+			ifTrue: [ ^value ]
+			ifFalse: [ (nextLink notNil)
+					ifTrue: [ ^ nextLink at: aKey
+							ifAbsent: exceptionBlock ]
+					ifFalse: [ ^ exceptionBlock value ] ]
+|
+	at: aKey put: aValue
+		(aKey == key)
+			ifTrue: [ value <- aValue ]
+			ifFalse: [ (nextLink notNil)
+				ifTrue: [ nextLink at: aKey put: aValue]
+				ifFalse: [ nextLink <- Link new;
+						key: aKey; value: aValue] ]
+|
+	binaryDo: aBlock
+		aBlock value: key value: value.
+		(nextLink notNil)
+			ifTrue: [ nextLink binaryDo: aBlock ]
+|
+	do: aBlock
+		aBlock value: value.
+		(nextLink notNil)
+			ifTrue: [ nextLink do: aBlock ]
+|
+	key: aKey
+		key <- aKey
+|
+	includesKey: aKey
+		(key == aKey)
+			ifTrue: [ ^ true ].
+		(nextLink notNil)
+			ifTrue: [ ^ nextLink includesKey: aKey ]
+			ifFalse: [ ^ false ]
+|
+	link: aLink
+		nextLink <- aLink
+|
+	removeKey: aKey
+		(aKey == key)
+			ifTrue: [ ^ nextLink ]
+			ifFalse: [ (nextLink notNil)
+				ifTrue: [ nextLink <- nextLink removeKey: aKey]]
+|
+	removeValue: aValue
+		(aValue == value)
+			ifTrue: [ ^ nextLink ]
+			ifFalse: [ (nextLink notNil)
+				ifTrue: [ nextLink <- nextLink removeValue: aValue]]
+|
+	size
+		(nextLink notNil)
+			ifTrue: [ ^ 1 + nextLink size]
+			ifFalse: [ ^ 1 ]
+|
+	value: aValue
+		value <- aValue
+|
+	value
+		^ value
+]
+Class List
+	add: aValue
+		^ self addFirst: aValue
+|
+	addAll: aValue
+		aValue do: [:x | self add: x ]
+|
+	addFirst: aValue
+		links <- Link new; value: aValue; link: links
+|
+	addLast: aValue
+		(links isNil)
+			ifTrue: [ self addFirst: aValue ]
+			ifFalse: [ links addLast: aValue ]
+|
+	collect: aBlock
+		^ self inject: self class new
+		       into: [:x :y | x add: (aBlock value: y). x ]
+|
+	reject: aBlock          
+		^ self select: [:x | (aBlock value: x) not ]
+|
+	select: aBlock          
+		^ self inject: self class new
+		       into: [:x :y | (aBlock value: y) 
+                                        ifTrue: [x add: y]. x]
+|
+	do: aBlock
+		(links notNil)
+			ifTrue: [ links do: aBlock ]
+|
+	first
+		(links notNil)
+			ifTrue: [ ^ links value ]
+			ifFalse: [ ^ smalltalk error: 'first on empty list']
+|
+	removeFirst
+		self remove: self first
+|
+	remove: value
+		(links notNil)
+			ifTrue: [ links <- links removeValue: value ]
+|
+	size
+		(links isNil)
+			ifTrue: [ ^ 0 ]
+			ifFalse: [ ^ links size ]
+]
+Class Magnitude
+	<= value
+		^ (self < value) or: [ self = value ]
+|
+	< value
+		^ (value > self)
+|
+	>= value
+		^ (self > value) or: [ self = value ]
+|
+	> value
+		^ (value < self)
+|
+	= value
+		^ (self == value)
+|
+	~= value
+		^ (self = value) not
+|
+	between: low and: high
+		^ (low <= self) and: [ self <= high ]
+|
+	max: value
+		^ (self < value)
+			ifTrue: [ value ]
+			ifFalse: [ self ]
+|
+	min: value
+		^ (self < value)
+			ifTrue: [ self ]
+			ifFalse: [ value ]
+]
+Class Method
+	compileWithClass: aClass
+		^ <39 aClass text self>
+|
+	name
+		^ message
+|
+	message: aSymbol
+		message <- aSymbol
+|
+	text
+		^ text
+|
+	text: aString
+		text <- aString
+]
+Class Number
+	maxgen: value
+		^ (self generality > value generality)
+			ifTrue: [ self ]
+			ifFalse: [ value coerce: self ]
+|
+	+ value
+		^ (self maxgen: value) + (value maxgen: self)
+|
+	- value
+		^ (self maxgen: value) - (value maxgen: self)
+|
+	< value
+		^ (self maxgen: value) < (value maxgen: self)
+|
+	= value
+		^ (self maxgen: value) = (value maxgen: self)
+|
+	* value
+		^ (self maxgen: value) * (value maxgen: self)
+|
+	/ value
+		^ (self maxgen: value) / (value maxgen: self)
+|
+	abs
+		^ (self < 0)
+			ifTrue: [ 0 - self ]
+			ifFalse: [ self ]
+|
+	exp
+		^ self asFloat exp
+|
+	gamma
+		^ self asFloat gamma
+|
+	ln
+		^ self asFloat ln
+|
+	log: value
+		^ self ln / value ln
+|
+	negated
+		^ 0 - self
+|
+	negative
+		^ self < 0
+|
+	positive
+		^ self >= 0
+|
+	raisedTo: value
+		^ ( value * self ln ) exp
+|
+	reciprocal
+		^ 1.00 / self
+|
+	roundTo: value
+		^ (self / value ) rounded * value
+|
+	sign
+		^ self negative ifTrue: [ -1 ]
+			ifFalse: [ self strictlyPositive 
+					ifTrue: [ 1 ] ifFalse: [ 0 ] ]
+|
+	squared
+		^ self * self
+|
+	strictlyPositive
+		^ self > 0
+|
+	to: value
+		^ Interval new; lower: self; upper: value; step: 1
+|
+	to: value by: step
+		^ Interval new; lower: self; upper: value; step: step
+|
+	trucateTo: value
+		^ (self / value) trucated * value
+]
+Class Random
+	between: low and: high
+		^ (self next * (high - low)) + low
+|
+	next
+		^ (<3> rem: 1000) / 1000
+|
+	next: value	| list |
+		list <- List new.
+		value timesRepeat: [ list add: self next ].
+		^ list
+|
+	randInteger: value
+		^ 1 + (<3> rem: value)
+|
+	set: value
+		<55 value>
+]
+Class Set
+	add: value
+		(self includes: value)
+			ifFalse: [ self addFirst: value ]
+]
+Class String
+	, value
+		^ (value isMemberOf: String)
+			ifTrue: [ <24 self value> ]
+			ifFalse: [ self , value printString ]
+|
+	= value
+		(value isKindOf: String)
+			ifTrue: [ ^ super = value ]
+			ifFalse: [ ^ false ]
+|
+	< value
+		(value isKindOf: String)
+			ifTrue: [ ^ super < value ]
+			ifFalse: [ ^ false ]
+|
+	asInteger		| value |
+		value <- 0.
+		self do: [:x | value <- value * 10 + x digitValue ].
+		^ value
+|
+	basicAt: index
+		^  Char new ; value: (super basicAt: index).
+|
+	basicAt: index put: aValue
+		(aValue isMemberOf: Char)
+			ifTrue: [ super basicAt: index put: aValue asciiValue ]
+			ifFalse: [ smalltalk error:
+				'cannot put non Char into string' ]
+|
+	asSymbol
+		^ <83 self>
+|
+	size
+		^ <81 self>
+|
+	copy
+		^ <82 self>
+]
+Class Smalltalk
+	class: aClass doesNotRespond: aMessage
+		^ self error: aClass printString ,
+			' does not respond to ' , aMessage
+|
+	cantFindGlobal: name
+		^ self error: 'cant find global symbol ' , name
+|
+	flushMessageCache
+		<2>
+|
+	saveImage: file
+		^ <87 file>
+]
+Class Symbol
+	asString
+		^ <82 self>
+|
+	printString
+		^ '#' , self asString
+]
+Class False
+	ifTrue: trueBlock ifFalse: falseBlock
+		^ falseBlock value
+|
+	not
+		^ true
+]
+Class True
+	ifTrue: trueBlock ifFalse: falseBlock
+		^ trueBlock value
+|
+	not
+		^ false
+]
+Class UndefinedObject
+	isNil
+		^ true
+|
+	notNil
+		^ false
+|
+	printString
+		^ 'nil'
+]

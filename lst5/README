@@ -1,0 +1,41 @@
+ _     _ _   _   _        ____                  _ _ _        _ _
+| |   (_) |_| |_| | ___  / ___| _ __ ___   __ _| | | |_ __ _| | | __
+| |   | | __| __| |/ _ \ \___ \| '_ ` _ \ / _` | | | __/ _` | | |/ /
+| |___| | |_| |_| |  __/  ___) | | | | | | (_| | | | || (_| | |   <
+|_____|_|\__|\__|_|\___| |____/|_| |_| |_|\__,_|_|_|\__\__,_|_|_|\_\ v5
+
+Copyright (C) 1987 - 2005, Timothy A. Budd
+Copyright (C) 2005 - 2007, Danny Reinhold
+Copyright (C) 2007,        Charles R. Childers
+
+This is a continuation of the Little Smalltalk language developed by Timothy
+Budd. It is based on his Version 4 source, but has been modified in many ways.
+New features, classes, etc are being added and the system is slowly maturing
+into a truely useful implementation of the Smalltalk language. What follows is
+the original introduction.
+
+What Little Smalltalk is, and more importantly, what it isn't
+
+First and foremost, let me say at the beginning in as LOUD a voice as I can
+that Little Smalltalk is NOT a smalltalk-80 system. If you want a real
+Smalltalk system go buy one from ParcPlace, Digitalk, IBM, or whomever.
+
+Little Smalltalk is a sort of fun experiment in building a minimal
+smalltalk system.  The source code for the interpreter is less than 1800
+lines of code.  The image consists of less than 4000 objects.  It runs
+in almost no memory.  In short, it's small, it's reasonably fast, it's easy
+to understand, and easy to modify.
+
+As you might expect, in order to get Smalltalk to run in something this
+small, I've had to make lots of changes.  Here are the most notable:
+
+ * No graphics
+ * The user interface is a more conventional real-eval-print loop
+   (like most Lisp systems), not a browser. (But it is all written in
+   Smalltalk itself, so you can modify it if you wish).
+ * Primitives and cascades are handled as they were in earlier Little
+   Smalltalk systems, which is not how they are handed in Smalltalk-80.
+ * The standard class hierarchy differs considerably from Smalltalk-80.
+   * My basic collections are List, Tree, Dictionary, Array, and String
+   * The only numbers in the standard image are large and small integers
+     (adding fractions and floats might be an interesting exercise, however).

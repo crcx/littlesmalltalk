@@ -1,0 +1,135 @@
+.LP
+(note: this is the first of a series of essays descriging how various 
+features of the Little Smalltalk bytecodes work).
+.SH
+Where It's At
+.PP
+This short note explains how the messages \fBat:\fP, \fBat:put:\fP, and their 
+relatives are defined and used in collections.  We start by discussing the 
+simplest form of collections, arrays and strings.
+.PP
+The message \fBat:\fP is not defined anywhere in class \fBArray\fP or any of
+its subclasses.  Instead, this message is inherited from 
+class \fBCollection\fP, which defines it using the following method:
+.DS I
+\fBat:\fP index
+	\(ua self at: index
+		ifAbsent: [ smalltalk error: 'index to at: illegal' ]
+.DE
+.PP
+The functioning of the message \fBerror:\fP is the topic of another essay;
+it is sufficient for our purposes to note only that this message prints out
+the error string and returns nil.  By redefining \fBat:\fP in this fashion,
+the subclasses of \fBCollection\fP need not be concerned about how to deal
+with errors in cases where no error recovery action has been specified.
+.PP
+For an array, an index is out of bounds if it is either less than 1 or greater
+than the size of the array.  This is tested by a method in class \fBArray\fP:
+.DS I
+\fBincludesKey:\fP index
+	^ index between: 1 and: self size
+.DE
+.PP
+The message \fBsize\fP is defined in class \fBArray\fP in terms of the
+message \fBbasicSize\fP
+.DS I
+\fBsize\fP
+	^ self basicSize
+.DE
+.PP
+The message \fBbasicSize\fP (as well as \fBbasicAt:\fP, discussed below) 
+is inherited from class 
+\fBObject\fP.  It can be used on any object; on non-arrays it returns
+the number of instance variables for the object.  The messages \fBbasicSize\fP 
+and \fBbasicAt:put:\fP can be used by system
+classes, for example debuggers, to access instance variables in an object 
+without having explicit access to the instance variables.  One must be 
+careful, however,
+\fBbasicAt:\fP produces a system error, and not a Smalltalk error message,
+if it is given an index value that is out of range.
+.PP
+Using \fBincludesKey:\fP for a test, a value is only accessed if the index
+is legal.  The following method appears in class \fBArray\fP:
+.DS I
+\fBat:\fP index \fBifAbsent:\fP exceptionBlock
+	^ (self includesKey: index)
+		ifTrue: [ self basicAt: index ]
+		ifFalse: [ exceptionBlock value ]
+.DE
+.PP
+A subclass of \fBArray\fP is the class \fBByteArray\fP.  A byte array is a form
+of array in which the elements can only take on values from zero to 255, or
+to put it another way, values that can be stored in one byte.
+On most 16 bit machines, we can store two such bytes in the space it takes
+to store one object pointer.  Thus, the message \fBsize\fP is redefined
+in class \fBByteArray\fP as follows:
+.DS I
+\fBsize\fP
+	\(ua self basicSize * 2
+.DE
+.LP
+Note that this implies that byte arrays always have an even number of
+elements.  Next the message \fBbasicAt:\fP is redefined to use a byte,
+instead of object, form of index.  This is accomplished using a primitive
+method, (the message \fBbasicAt:\fP is handled in a similar fashion in
+class \fBObject\fP, only using a different primitive).
+.DS I
+\fBbasicAt:\fP index
+	\(ua <26 self index>
+.DE
+.PP
+Like a byte array, a string can also store two byte values in the space
+it takes to store a single object pointer.  Unlike a byte array, however,
+a string can be any length, not just an even length.  Therefore the message
+\fBsize\fP is redefned in class \fBString\fP, a subclass of \fBByteArray\fP.
+.DS I
+\fBsize\fP
+	\(ua <14 self>
+.DE
+.PP
+Another difference between a string and a byte array is that the value
+returned by a string must be a character, not an integer.  Therefore
+\fBbasicAt:\fP must also be redefined.  By using the message \fBbasicAt:\fP
+defined in \fBByteArray\fP, (the superclass of String, and therefore accessible
+via the pseudo variable \fBsuper\fP) the method can obtain the integer value 
+of the appropriate character.  This value is then used to create a new
+instance of class \fBChar\fP:
+.DS I
+\fBbasicAt:\fP index
+	\(ua Char new; value: (super basicAt: index)
+.DE
+.PP
+A value is placed into an array using the message \fPat:put:\fP.  As with 
+\fBat:\fP, a value should only be placed if the index represents a legal
+subscript.  This is checked in the following method:
+.DS I
+\fBat:\fP index \fBput:\fP value
+	(self includesKey: index)
+		ifTrue: [ self basicAt: index put: value ]
+		ifFalse: [ smalltalk error: 
+			'illegal index to at:put: for array' ]
+.DE
+.PP
+As was the case with \fBbasicAt:\fP, one version of \fBbasicAt:put:\fP,
+to be used by arrays of objects, is defined as part of class \fBObject\fP.
+A different version is found in class \fBByteArray\fP.  Finally a third 
+version, which first checks to see if the argument is a Character, is found
+in class \fBString\fP.
+.DS I
+\fBat:\fP index \fBput:\fP aValue
+	(aValue isMemberOf: Char)
+		ifTrue: [ super basicAt: index put: aValue asciiValue ]
+		ifFalse: [ smalltalk error:
+			'cannot put non Char into string' ]
+.DE
+.SH
+Exercises
+.IP 1.
+Describe the sequence of messages used to respond to the following:
+.DS B
+x \(<- #(1 2 3) at: 2
+.DE
+.IP 2.
+Describe how the execution of the above expression could be speeded up by
+adding new methods.  Note if your methods are specific to arrays of objects,
+arrays of bytes, or strings.
