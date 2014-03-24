@@ -20,5 +20,6 @@ image:
 
 clean:
 	rm -f `find . | grep \~`
-	rm -f bin/*
+	rm -rf bin/*
+	rm -f sources/*.o
 	cd ImageBuilder && make clean
