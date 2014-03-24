@@ -66,6 +66,12 @@ static char selector[80];		/* message selector */
 static boolean inBlock;			/* true if compiling a block */
 static boolean optimizedBlock;		/* true if compiling optimized block */
 
+void block();
+void expression();
+void body();
+void parsePrimitive();
+
+
 void setInstanceVariables(aClass)
 object aClass;
 {	int i, limit;

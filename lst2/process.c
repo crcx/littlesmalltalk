@@ -36,6 +36,9 @@ static object blockReturnContext;
 object processStack[ProcessStackMax];
 int processStackTop = 0;
 
+void sendMessage(object, object, int);
+
+
 /*
 	we cache recently used methods, in case we want them again
 */
@@ -114,7 +117,7 @@ object method, methodClass, *contextobj, argobj, *tempobj;
 	basicAtPut(*contextobj, temporariesInContext, *tempobj);
 }
 
-sendMessage(message, startingClass, argumentPosition)
+void sendMessage(message, startingClass, argumentPosition)
 object message, startingClass;
 int argumentPosition;
 {	object method, methodClass, size;

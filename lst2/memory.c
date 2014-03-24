@@ -283,6 +283,8 @@ void irerr() { sysError("imageWrite count error",""); }
 assure that objects read in are really referenced, eliminating junk
 that may be in the object file but not referenced */
 
+void memincr(int, int);
+
 void membump(i, j)
 int i, j;
 {	int k;
