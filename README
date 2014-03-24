@@ -1,0 +1,8 @@
+This contains the implementations of A Little Smalltalk from the
+former "A Little Smalltalk" project. I'm not actively working on
+any of these now, but keep the sources here to help keep this
+historical system from being lost.
+
+lst3, lst4, and lst5 should all work pretty well. lst1 and lst2
+are based on really old sources, but I occasionally try to build
+them and fix bugs and warnings.
