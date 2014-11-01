@@ -67,7 +67,7 @@ struct varstruct *contextvars;
 
 int bytetop = 0;
 uchar bytearray[1000];
-extern char yytext[];
+extern char* yytext;
 
 YYSTYPE e;
 int errorcount = 0;

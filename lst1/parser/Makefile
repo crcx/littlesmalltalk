@@ -32,4 +32,7 @@ lint.out: y.tab.c
 	lint y.tab.c parse1.c parse2.c -lm
 
 clean:
+	rm lex.yy.c
+	rm y.tab.c
+	rm y.tab.h
 	-rm *.o

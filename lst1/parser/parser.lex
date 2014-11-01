@@ -2,14 +2,13 @@
 /*
         Little Smalltalk lexical analyzer
 */
-# include <math.h>
-# include "primnum.h"
-
-# undef input
-# undef unput
+#include <math.h>
+#include "primnum.h"
 
 double atof();
 int linenum = 1;
+void lexunput(char c);
+void readcomment();
 %}
 %%
 [ \t]+                          {;}
@@ -30,7 +29,7 @@ smalltalk                       {yylval.p = smallvar; return(PSEUDO);}
 [0-9]+r-?[0-9A-Z]+(\.[0-9A-Z]+)?(e[-+]?[0-9]+)? {return(lexsave(LITFNUM));}
 [0-9]+                          {yylval.i = atoi(yytext); return(LITNUM);}
 [0-9]+(\.[0-9]+)?(e[-+]?[0-9]+)?   {return(lexsave(LITFNUM));}
-'[^']*'                         {char c; unput(c = input());
+'[^']*'                         {char c; lexunput(c = lexinput());
                                  if (c == '\'') yymore();
                                  else return(lexlstr());}
 [a-zA-Z0-9]+:?                  {return(varlex());}
@@ -56,85 +55,84 @@ smalltalk                       {yylval.p = smallvar; return(PSEUDO);}
 static int ocbuf = 0;
 static int pbbuf[400];
 
-static int input()
-{	int c;
+int lexinput()
+{	
+    int c;
 
-	if (ocbuf) {c = pbbuf[--ocbuf]; }
-	else {
-		c = getc(fp);
-		if (c == EOF) c = 0;
-		}
-	return(c);
+    if (ocbuf) {
+        c = pbbuf[--ocbuf]; 
+    } else {
+        c = getc(fp);
+        if (c == EOF) c = 0;
+    }
+    return(c);
 }
 
-static unput(c)
-char c;
+void lexunput(char c)
 {
-	if (c) pbbuf[ocbuf++] = c;
+    if (c) pbbuf[ocbuf++] = c;
 }
 
-# include <ctype.h>
+#include <ctype.h>
 
-static readcomment()
-{  char c;
-
-   while ((c = input()) && c != '\"')
-	if (c == '\n') linenum++;
-   if (!c) yyerror("unterminated comment");
-}
-
-char *walloc(s) char *s;
-{  char *p, *malloc();
-
-   p = malloc((unsigned) (strlen(s) + 1));
-   if (p == (char *) 0) yyerror("out of variable string space");
-   strcpy(p, s);
-   return(p);
-}
-
-static int slexsave(type)
-int type;
-{
-
-	yylval.c = walloc(&yytext[1]);
-	if (yylval.c == 0) yerr("cannot create symbol %s", yytext);
-	return(type);
-}
-
-static int lexsave(type)
-int type;
-{
-
-	yylval.c = walloc(yytext);
-	if (yylval.c == 0) yerr("cannot create string %s", yytext);
-	return(type);
-}
-
-static int varlex()
+void readcomment()
 {  
+    char c;
 
-   lexsave(0);
-   if (yytext[yyleng-1] == ':') return(KEYWORD);
-   else if (islower(yytext[0])) return(LOWERCASEVAR);
-   else return(UPPERCASEVAR);
+    while ((c = lexinput()) && c != '\"')
+        if (c == '\n') linenum++;
+    if (!c) yyerror("unterminated comment");
 }
 
-static int lexlstr()
-{  char *p, *q;
+char *walloc(char *s) 
+{  
+    char *p;
 
-   yylval.c = p = walloc(&yytext[1]);
-   *(p + yyleng -2) = '\0';
-   return(LITSTR);
+    p = malloc((unsigned) (strlen(s) + 1));
+    if (p == (char *) 0) yyerror("out of variable string space");
+    strcpy(p, s);
+    return(p);
 }
 
-static int prim_number(name)
-char *name;
-{	struct prim_names *p;
+int slexsave(int type)
+{
+    yylval.c = walloc(&yytext[1]);
+    if (yylval.c == 0) yerr("cannot create symbol %s", yytext);
+    return(type);
+}
 
-	for (p = prim_table; *(p->p_name); p++) {
-		if (strcmp(p->p_name, name) == 0)
-			return(p->p_number);
-		}
-	yerr("unknown primitive name %s", name);
-	return(0);
+int lexsave(int type)
+{
+    yylval.c = walloc(yytext);
+    if (yylval.c == 0) yerr("cannot create string %s", yytext);
+    return(type);
+}
+
+int varlex()
+{  
+    lexsave(0);
+    if (yytext[yyleng-1] == ':') return(KEYWORD);
+    else if (islower(yytext[0])) return(LOWERCASEVAR);
+    else return(UPPERCASEVAR);
+}
+
+int lexlstr()
+{  
+    char *p, *q;
+
+    yylval.c = p = walloc(&yytext[1]);
+    *(p + yyleng -2) = '\0';
+    return(LITSTR);
+}
+
+int prim_number(char *name)
+{	
+    struct prim_names *p;
+
+    for (p = prim_table; *(p->p_name); p++) {
+        if (strcmp(p->p_name, name) == 0)
+            return(p->p_number);
+    }
+    yerr("unknown primitive name %s", name);
+    return(0);
 }
