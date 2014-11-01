@@ -505,7 +505,7 @@ int must;	/* must we find something ? */
 }
 
 /* gensend - generate a message send */
- gensend(message, numargs)
+int gensend(message, numargs)
 char *message;
 int  numargs;
 {	int i;
@@ -517,26 +517,26 @@ int  numargs;
 		for (p = unspecial, i = 0; *p; i++, p++)
 			if ((**p == c) && (strcmp(*p, message) == 0)) {
 				genhighlow(UNSEND, i);
-				return;
+				return 0;
 				}
 		}
 	else if (numargs == 1) {
 		for (p = binspecial, i = 0; *p; i++, p++)
 			if ((**p == c) && (strcmp(*p, message) == 0)) {
 				genhighlow(BINSEND, i);
-				return;
+				return 0;
 				}
 		for (p = arithspecial, i = 0; *p; i++, p++)
 			if ((**p == c) && (strcmp(*p, message) == 0)) {
 				genhighlow(ARITHSEND, i);
-				return;
+				return 0;
 				}
 		}
 	else if (numargs == 2) {
 		for (p = keyspecial, i = 0; *p; i++, p++)
 			if ((**p == c) && (strcmp(*p, message) == 0)) {
 				genhighlow(KEYSEND, i);
-				return;
+				return 0;
 				}
 		}
 	genhighlow(SEND, numargs);
@@ -580,14 +580,14 @@ int make;
    return(i);
 }
 
-genvar(name)
+int genvar(name)
 char *name;
 {	int i;
 
 	for (i = 0; i < temptop; i++)
 		if (strcmp(name, tempnames[i]) == 0) {
 			genhighlow(PUSHTEMP, i+1);
-			return;
+			return 0;
 			}
 	genhighlow(PUSHINSTANCE, findvar(name, 0));
 }
@@ -621,13 +621,13 @@ char *str;
 
 extern object *o_drive;	/* ``driver'' interpreter */
 
-bld_interpreter()
+int bld_interpreter()
 {  interpreter *interp;
    object *literals, *bytecodes, *context;
    int i;
 
    if (codetop == 0) {
-	return;
+	return 0;
 	}
    genhighlow(SPECIAL, SELFRETURN);
    gencode(0);			/* mark end of bytecodes */

@@ -124,7 +124,7 @@ object **args;
 
 /* block_return - return an object from the context in which a block was
 created */
-block_return(blockInterpreter, anObject)
+int block_return(blockInterpreter, anObject)
 interpreter *blockInterpreter;
 object *anObject;
 {	interpreter *backchain, *parent;
@@ -145,7 +145,7 @@ object *anObject;
 			else {
 				terminate_process(runningProcess);
 				}
-			return;
+			return 0;
 			}
 		}
 

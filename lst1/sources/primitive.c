@@ -58,7 +58,10 @@ object **args;
 	object *leftarg, *rightarg;
 	int    leftint, rightint, i, j;
 	double leftfloat, rightfloat;
-	time_t   clock;
+
+// FIXME
+//	time_t   clock;
+
 	char   *leftp, *rightp, *errp;
 	class  *aClass;
 	bytearray *byarray;
@@ -1094,8 +1097,9 @@ object **args;
 			goto return_obj;
 
 		case 160:	/* current time */
-			time(&clock);
-                        ctime_r(&clock,strbuffer);
+// FIXME
+//			time(&clock);
+//                        ctime_r(&clock,strbuffer);
 			goto return_string;
 
 		case 161:	/* time, measure in seconds */
@@ -1280,7 +1284,7 @@ char buffer[];
    *q = '\0';
 }
 
- fprnt_radix(f, n, buffer)
+int fprnt_radix(f, n, buffer)
 double f;
 int n;
 char buffer[];
@@ -1320,7 +1324,7 @@ char buffer[];
 			*p++ = *q++;
 		}
 	*p = '\0';
-	return;
+	return 0;
 }
 
 /* generalit - numerical generality */

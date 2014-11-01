@@ -58,7 +58,7 @@ cdic_init() {
 }
 
 /* enter_class - enter a class into the internal class dictionary */
-enter_class(name, description)
+int enter_class(name, description)
 char *name;
 object *description;
 {	struct class_entry *p;
@@ -66,7 +66,7 @@ object *description;
 	for (p = class_dictionary; p; p = p->cl_link)
 		if (strcmp(name, p->cl_name) == 0) {
 			assign(p->cl_description, description);
-			return;
+			return 0;
 			}
 	/* not found, make a new entry */
 	if (fr_cdict) {
@@ -105,7 +105,7 @@ free_all_classes()
 
 /* class_list - list all the subclasses of a class (recursively),
 	indenting by a specified number of tab stops */
-class_list(c, n)
+int class_list(c, n)
 class *c;
 int n;
 {	struct class_entry *p;
@@ -115,7 +115,7 @@ int n;
 
 	/* first print out this class name */
 	if (! is_symbol(c->class_name))
-		return;
+		return 0;
 	sassign(prs[0], c->class_name);
 	name = symbol_value(c->class_name);
 	sassign(prs[1], new_int(n));

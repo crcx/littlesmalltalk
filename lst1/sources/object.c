@@ -57,14 +57,14 @@ register object *x;
 }
 
 /* obj_dec - decrement an object (usually half expanded in-line) */
-obj_dec(x) 
+void obj_dec(x) 
 object *x;
 {
 	n_decs++;
 	if (--(x->ref_count) > 0) return;
 # endif
 # ifdef INLINE
-ob_dec(x)
+void ob_dec(x)
 object *x;
 {
 # endif

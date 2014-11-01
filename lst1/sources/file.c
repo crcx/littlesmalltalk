@@ -125,7 +125,7 @@ struct file_struct *phil;
 	return(new);
 }
 
-file_write(phil, obj)
+void file_write(phil, obj)
 struct file_struct *phil;
 object *obj;
 {

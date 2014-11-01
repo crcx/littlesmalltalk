@@ -365,7 +365,7 @@ struct exprstruct *e;
 	return(0);
 }
 
-genexpr(e)
+int genexpr(e)
 struct exprstruct *e;
 {	char *message = e->cmdname;
 	char **p;
@@ -380,17 +380,17 @@ struct exprstruct *e;
 			yerr("unknown state in genexpr %d", e->cmdtype);
 		case reccmd:
 			genobj(e->cc.recobj);
-			return;
+			return 0;
 		case semiend:
 			genexpr(e->receiver);
 			genhighlow(SPECIAL, POPSTACK);
 			popstk(1);
-			return;
+			return 0;
 		case semistart:
 			genexpr(e->receiver);
 			genhighlow(SPECIAL, DUPSTACK);
 			bumpstk();
-			return;
+			return 0;
 		case uncmd:
 			genexpr(e->receiver);
 			numargs = 0;
@@ -405,7 +405,7 @@ struct exprstruct *e;
 				(streq(message, "whileTrue:") ||
 				 streq(message, "whileFalse:")))
 				 if (gencond(message, e))
-					return;
+					return 0;
 			genexpr(e->receiver);
 			if ((!s) && ((streq(message, "ifTrue:")) ||
 				(streq(message, "ifFalse:")) ||
@@ -414,7 +414,7 @@ struct exprstruct *e;
 				(streq(message, "ifTrue:ifFalse:")) ||
 				(streq(message, "ifFalse:ifTrue:"))))
 				if (gencond(message, e))
-					return;
+					return 0;
 			numargs = genkargs(e->cc.keys);
 			break;
 		}
@@ -423,30 +423,30 @@ struct exprstruct *e;
 		popstk(numargs - 1);
 		ex.c = message;
 		gencode(genlitix(mklit(symlit, &ex)));
-		return;
+		return 0;
 		}
 	for (p = unspecial, i = 0; *p; i++, p++)
 		if (strcmp(*p, message) == 0) {
 			genhighlow(UNSEND, i);
-			return;
+			return 0;
 			}
 	for (p = binspecial, i = 0; *p; i++, p++)
 		if (strcmp(*p, message) == 0) {
 			genhighlow(BINSEND, i);
 			popstk(1);
-			return;
+			return 0;
 			}
 	for (p = arithspecial, i = 0; *p; i++, p++)
 		if (strcmp(*p, message) == 0) {
 			genhighlow(ARITHSEND, i);
 			popstk(1);
-			return;
+			return 0;
 			}
 	for (p = keyspecial, i = 0; *p; i++, p++)
 		if (strcmp(*p, message) == 0) {
 			genhighlow(KEYSEND, i);
 			popstk(2);
-			return;
+			return 0;
 			}
 	genhighlow(SEND, numargs);
 	popstk(numargs - 1);
@@ -500,7 +500,7 @@ struct objstruct *o;
 		}
 }
 
-genspclass(litinfo)
+int genspclass(litinfo)
 struct litstruct *litinfo;
 {	int i;
 	char **p, *name;
@@ -512,7 +512,7 @@ struct litstruct *litinfo;
 		if (strcmp(name, *p) == 0) {
 			genhighlow(PUSHSPECIAL, i);
 			bumpstk();
-			return;
+			return 0;
 			}
 	genhighlow(PUSHCLASS, genlitix(litinfo));
 	bumpstk();

@@ -32,7 +32,7 @@ extern object *fnd_super();
 
 /* send_mess - find the method needed to respond to a message, create the
 	proper context and interpreter for executing the method */
-send_mess(sender, receiver, message, args, numargs)
+int send_mess(sender, receiver, message, args, numargs)
 interpreter *sender;
 object *receiver, **args;
 char *message;
@@ -96,7 +96,7 @@ do_cmd:
 
 /* clean up after yourself */
 clean_up:
-	return;
+	return 0;
 }
 
 /* responds_to - see if a class responds to a message */
@@ -126,7 +126,7 @@ interpreter *current;
 }
 
 /* fnd_message - find the message associated with an interpreter */
- fnd_message(receiver, bytecodes)
+int fnd_message(receiver, bytecodes)
 object *receiver, *bytecodes;
 {	int i;
 	class *oclass;
@@ -145,7 +145,7 @@ object *receiver, *bytecodes;
 			sassign(temp, new_str(buffer));
 			primitive(ERRPRINT, 1, &temp);
 			obj_dec(temp);
-			return;
+			return 0;
 			}
 		}
 	cant_happen(24);

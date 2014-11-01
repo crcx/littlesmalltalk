@@ -126,7 +126,7 @@ anInterpreter->currentbyte++;}
 # define skip(x)    (anInterpreter->currentbyte += x )
 
 /* resume - resume executing bytecodes associated with an interpreter */
-resume(anInterpreter)
+int resume(anInterpreter)
 register interpreter *anInterpreter;
 {
 	int highBits;
@@ -308,7 +308,7 @@ register interpreter *anInterpreter;
 					goto do_return;
 				case 4: /* block return */
 					block_return(anInterpreter, popstack());
-					return;
+					return 0;
 				case 5: /* self return */
 					tempobj = tempvar(0);
 					goto do_return;
@@ -393,7 +393,7 @@ register interpreter *anInterpreter;
 		decstack(numargs + 1);
 		send_mess(anInterpreter, receiver, message,
 			anInterpreter->stacktop , numargs);
-		return;
+		return 0;
 
 		/* do_return - return from a message */
 	do_return:
@@ -406,7 +406,7 @@ register interpreter *anInterpreter;
 		else {
 			terminate_process(runningProcess);
 			}
-		return;
+		return 0;
 
 		/* blk_execute - perform the block execute primitive */
 	blk_execute:
@@ -416,5 +416,5 @@ register interpreter *anInterpreter;
 		sender = block_execute(anInterpreter->sender, 
 			(block *) tempvar(0), numargs, &tempvar(1));
 		link_to_process(sender);
-		return;
+		return 0;
 }
