@@ -1,0 +1,8 @@
+# lst1 build files
+lst1/bin/*
+lst1/parser/*.o
+lst1/sources/*.o
+lst1/sources/sstr
+lst1/sources/headers/cmds.h
+lst1/sources/headers/drive.h
+lst1/sources/headers/env.h
