@@ -1,6 +1,9 @@
 # lst1 build files
 lst1/bin/*
 lst1/parser/*.o
+lst1/parser/lex.yy.c
+lst1/parser/y.tab.c
+lst1/parser/y.tab.h
 lst1/sources/*.o
 lst1/sources/sstr
 lst1/sources/headers/cmds.h
