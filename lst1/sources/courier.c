@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include "lst.h"
 
+extern object *fnd_class();
+extern object *fnd_super();
+
 /* send_mess - find the method needed to respond to a message, create the
 	proper context and interpreter for executing the method */
 send_mess(sender, receiver, message, args, numargs)
@@ -57,7 +60,7 @@ int numargs;
 				}
 			}
 		if (is_bltin(robject))
-			robject = (object *)fnd_super(robject);
+			robject = fnd_super(robject);
 		else
 			robject = robject->super_obj;
 		}

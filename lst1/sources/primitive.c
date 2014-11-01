@@ -44,6 +44,8 @@ extern int prntcmd;
 extern double modf();
 extern long time();
 extern object *lookup_class();
+extern object *fnd_class();
+extern object *fnd_super();
 extern process *runningProcess;
 extern int responds_to(), generality();
 extern class  *mk_class();
@@ -53,10 +55,10 @@ object *primitive(primnumber, numargs, args)
 int primnumber, numargs;
 object **args;
 {	object *resultobj;
-	object *leftarg, *rightarg, *fnd_class(), *fnd_super();
+	object *leftarg, *rightarg;
 	int    leftint, rightint, i, j;
 	double leftfloat, rightfloat;
-	long   clock;
+	time_t   clock;
 	char   *leftp, *rightp, *errp;
 	class  *aClass;
 	bytearray *byarray;
@@ -255,7 +257,7 @@ object **args;
 			else if (is_character(leftarg))
 				leftint = int_value(leftarg);
 			else if (is_symbol(leftarg))
-				leftint = (int) symbol_value(leftarg);
+				leftint = *((int*)symbol_value(leftarg));
 			else if (is_string(leftarg)) {
 				leftp = string_value(leftarg);
 				leftint = 0;
@@ -267,7 +269,7 @@ object **args;
 					}
 				}
 			else /* for all other objects return address */
-				leftint = (int) &leftarg;
+				leftint = *((int*) &leftarg);
 			if (leftint < 0)
 				leftint = -leftint;
 			goto return_integer;
@@ -891,7 +893,7 @@ object **args;
 
 		case 128: /* reference count error */
 			if (numargs != 1) goto argcerror;
-			sprintf(strbuffer,"object %d reference count %d",
+			sprintf(strbuffer,"object %p reference count %d",
 				args[0], args[0]->ref_count);
 			errp = strbuffer;
 			goto return_error;
@@ -1093,7 +1095,7 @@ object **args;
 
 		case 160:	/* current time */
 			time(&clock);
-			strcpy(strbuffer, (char *)ctime(&clock));
+                        ctime_r(&clock,strbuffer);
 			goto return_string;
 
 		case 161:	/* time, measure in seconds */

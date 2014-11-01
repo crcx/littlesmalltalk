@@ -69,7 +69,7 @@ object *x;
 {
 # endif
 	if (x->ref_count < 0) {
-		fprintf(stderr,"ref count %d %d\n", x->ref_count, x);
+		fprintf(stderr,"ref count %d %p\n", x->ref_count, x);
 		primitive(REFCOUNTERROR, 1, &x);
 		return;
 		}
@@ -189,8 +189,7 @@ int    dofree;
 }
 
 /* fnd_class - find the class of a special object */
-object *fnd_class(anObject)
-object *anObject;
+object *fnd_class(object* anObject)
 {	object *result, *lookup_class();
 	char *name;
 
@@ -219,8 +218,7 @@ object *anObject;
 extern object *o_object, *o_magnitude, *o_number;
 
 /* fnd_super - produce a super-object for a special object */
-object *fnd_super(anObject)
-object *anObject;
+object *fnd_super(object *anObject)
 {	object *result;
 
 	if (is_bltin(anObject)) {
