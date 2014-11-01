@@ -1,6 +1,6 @@
 .SUFFIXES : .st .p
 PREPATH = .
-BINDIR = ../bin
+BINDIR = ../../bin
 
 PARSED = class.p object.p \
 string.p larray.p nil.p array.p\
