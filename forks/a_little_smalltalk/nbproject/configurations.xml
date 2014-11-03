@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="91">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="." name="0">
+      <df name="src">
+        <in>filein.c</in>
+        <in>interp.c</in>
+        <in>lex.c</in>
+        <in>memory.c</in>
+        <in>names.c</in>
+        <in>news.c</in>
+        <in>parser.c</in>
+        <in>primitive.c</in>
+        <in>st.c</in>
+        <in>tty.c</in>
+        <in>unixio.c</in>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>false</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <codeAssistance>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+          <cTool>
+            <incDir>
+              <pElem>.</pElem>
+            </incDir>
+          </cTool>
+        </makeTool>
+      </makefileType>
+      <item path="src/filein.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/interp.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/lex.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/memory.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/names.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/news.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/parser.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/primitive.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/st.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/tty.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="src/unixio.c" ex="false" tool="0" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>
