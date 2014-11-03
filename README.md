@@ -38,6 +38,10 @@ the littlesmalltalk.org website.
 
 This is working on OS X Yosemite as of November 2014.
 
+## smallworld
+
+A Java implementation.
+
 # Credits
 
 My thanks go to Timothy Budd for creating this, Danny Reinhold for

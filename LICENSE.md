@@ -19,3 +19,7 @@ Free for non-commercial use
 ## v5
 
 Released under an MIT style license
+
+## SmallWorld
+
+Public Domain
