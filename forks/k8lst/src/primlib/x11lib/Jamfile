@@ -1,0 +1,6 @@
+SubDir TOP src primlib x11lib ;
+
+
+Library liblstpl_x11lib.a :
+  lstpl_x11.c
+;

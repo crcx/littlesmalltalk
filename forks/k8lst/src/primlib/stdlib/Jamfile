@@ -1,0 +1,6 @@
+SubDir TOP src primlib stdlib ;
+
+
+Library liblstpl_stdlib.a :
+  lstpl_stdlib.c
+;

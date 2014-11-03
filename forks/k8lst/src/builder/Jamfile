@@ -1,0 +1,6 @@
+SubDir TOP src builder ;
+
+Main imgbuilder : imgbuild.c ;
+
+
+SubIncludeOnce JAM_INC_LSTCORE : TOP src lstcore ;

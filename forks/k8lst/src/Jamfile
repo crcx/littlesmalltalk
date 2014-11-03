@@ -1,0 +1,44 @@
+SubDir TOP src ;
+
+
+if $(LST_USE_FLTK) {
+  Library liblstfltk.a : lstfltk.cpp ;
+  LFL = liblstfltk.a ;
+} else {
+  LFL = ;
+}
+
+if ! $(WINDOZE) {
+  XLB = liblstpl_x11lib.a ;
+} else {
+  XLB = ;
+}
+
+
+Library liblstiup.a : lstiup.c ;
+IUL = liblstiup.a ;
+
+
+Main lst : main.c ;
+LinkLibraries lst :
+  liblstcore.a
+  liblstpl_stdlib.a
+  liblstpl_ffi.a
+  liblstpl_socket.a
+  #liblstpl_sqlite.a
+  liblstpl_relib.a
+    libhsrelib.a
+    libtrex.a
+  $(LFL)
+  $(IUL)
+  $(XLB)
+;
+LINKLIBS on lst += -ldl -lrt ;
+if $(LST_USE_IUP) {
+  LINKLIBS on lst += $(TOP)/extlibs/libiup.a $(TOP)/extlibs/libiupcontrols.a $(TOP)/extlibs/libiupimglib.a ;
+  LINKLIBS on lst += $(TOP)/extlibs/libiupcd.a $(TOP)/extlibs/libcd.a ;
+  #LINKLIBS on lst += $(TOP)/extlibs/libcdx11.a ;
+}
+
+SubIncludeOnce JAM_INC_LSTCORE : TOP src lstcore ;
+SubIncludeOnce JAM_INC_LSTPRIMLIB : TOP src primlib ;

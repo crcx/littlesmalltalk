@@ -1,0 +1,112 @@
+all classes with class variables should be created in image builder, so
+we can allocate space for class variables.
+
+
+binary message '/' always returns integers. to get float result one
+should do something like (3 asFloat / 5).
+
+
+LST has funny special form of inline array:
+  #{ + / * }
+this array will be treated as list of symbols separated by spaces.
+
+
+ByteArray/ByteCode literal syntax:
+  #[ n n...] -- ByteArray
+  #[[ n n...]] -- ByteCode
+
+
+for primitive handlers:
+remember, that any allocation except lstNewInt() can trigger GC
+and invalidate all non-static object pointers (except arguments).
+to avoid this you can keep your values in lstRootStack.
+VM will clear all pushed stack values when primitive handler returns.
+see lstRootPush() and lstRootPop().
+
+
+this will not work:
+  class: Test | fac | [
+  ^init [
+    fac := [:n :r |
+      'n: ' print. n printNl.
+      n > 1
+        ifTrue: [ r := n * (fac value: n - 1) ]
+        ifFalse: [ r := 1 ].
+      'r: ' print. r printNl.
+      r
+    ].
+    (fac value: 5) printNl.
+  ]
+  ]
+  { Test init }
+blocks are not real closures, and running block can't be
+invoked from the same (or another) running block. sorry.
+
+
+remember that inter-group block returns WILL NOT work.
+such return will probably break the interpreter.
+
+
+doesNotUnderstand message
+doesNotUnderstand: selector arg: argarray
+argarray is the full argument array (note that 1st item is 'self')
+
+
+note, that simple getters and setters (and simple 'constant returns')
+are virtually painless, as they will be inlined by the MyCoolAnalyzer.
+
+
+ifNil:
+ifNil: is actually a 'nil filter': it returns it's receiver if it is
+not nil.
+
+
+ifTrue: or ifFalse: return value
+note, that upon unsuccesfull check, ifTrue: will return false,
+and ifFalse: will return true. in Squeak they seems to return
+nil.
+
+
+st-finalizers (modelled after GST)
+the following description was copied from GST manual.
+
+Object>>addToBeFinalized
+Marks the object so that, as soon as it becomes unreferenced,
+its #finalize method is called. Before finalize is called,
+the VM implicitly removes the objects from the list of
+finalizable ones. If necessary, the finalize method can mark
+again the object as finalizable, but by default finalization
+will only occur once.
+
+Note that a finalizable object is kept in memory even when it
+has no references, because tricky finalizers might resuscitate
+the object; automatic marking of the object as not to be
+finalized has the nice side effect that the VM can simply delay
+the releasing of the memory associated to the object, instead of
+being forced to waste memory even after finalization happens.
+
+An object must be explicitly marked as to be finalized every time
+the image is loaded; that is, finalizability is not preserved by
+an image save. This was done because in most cases finalization
+is used together with operating system resources that would be
+stale when the image is loaded again.
+
+Object>>removeToBeFinalized
+Removes the to-be-finalized mark from the object. As I noted
+above, the finalize code for the object does not have to do
+this explicitly.
+
+Object>>finalize
+This method is called by the VM when there are no more references
+to the object.
+
+
+weak objects
+the following description was copied from GST manual.
+
+Object>>makeWeak
+Marks the object so that it is considered weak in subsequent garbage
+collection passes. The garbage collector will consider dead an object
+which has references only inside weak objects, and will replace
+references to such an almost-dead object with nils, and then send the
+#mourn message to the object.

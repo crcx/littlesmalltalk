@@ -1,0 +1,22 @@
+SubDir TOP src primlib relib ;
+
+
+Library libhsrelib.a :
+  hsregexp.c
+;
+
+Library libtrex.a :
+  trex.c
+;
+
+Library liblstpl_relib.a :
+  lstpl_regexp.c
+;
+
+
+##Main hsretry : hsretry.c ;
+##LinkLibraries hsretry : libhsrelib.a ;
+
+
+##Main trextest : trextest.c ;
+##LinkLibraries trextest : libtrex.a ;

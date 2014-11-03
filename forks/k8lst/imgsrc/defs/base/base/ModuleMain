@@ -1,0 +1,40 @@
+COMMENT   The strange circular world at the beginning
+COMMENT RAWCLASS Object MetaObject nil
+COMMENT
+RAWCLASS Class        MetaClass    Object      cvName cvParentClass cvMethods cvSize cvVariables cvPackage
+RAWCLASS MetaObject   Class        Class
+RAWCLASS MetaClass    Class        MetaObject
+
+COMMENT Object subclass: Package packages | name version requires
+COMMENT CLASS PackageRequirement  Object  name minVersion
+
+COMMENT
+COMMENT some forward declarations
+COMMENT
+
+
+"
+  retRes and optimDone is used in optimizer
+  if optimDone is SmallInt: return this integer constant
+  if optimDone is not nil: return retRes
+"
+
+CLASS Method     Object  name byteCodes literals stackSize temporarySize class text argCount \
+                         debugInfo argNames tempNames dbgData \
+                         optimDone retRes \
+                         category \
+                         invokeCount
+CLASS Magnitude  Object
+
+COMMENT Object subclass: Package packages current | classes name version requires
+
+
+INCLUDE object
+INCLUDE class
+INCLUDE undefined
+INCLUDE method
+INCLUDE magnitude
+INCLUDE process
+INCLUDE context
+INCLUDE block
+INCLUDE package

@@ -1,0 +1,35 @@
+INCLUDE node
+INCLUDE link
+
+
+CLASS Collection    Magnitude
+CLASS Tree          Collection  root
+
+CLASS List          Collection  head tail count
+CLASS Interval      Collection  low high step
+
+CLASS Dictionary    Collection  keys values
+
+CLASS Array         Collection
+COMMENT WTF? :CLASS MetaString    Class  MetaArray
+CLASS String        Array
+CLASS OrderedArray  Array
+CLASS ByteArray     Array
+CLASS ByteCode      ByteArray
+
+CLASS StringBuffer  Object  head tail size
+
+
+INCLUDE collection
+INCLUDE tree
+INCLUDE list
+INCLUDE interval
+INCLUDE dictionary
+INCLUDE array
+INCLUDE string
+INCLUDE stringbuffer
+INCLUDE orderedarray
+INCLUDE bytearray
+INCLUDE bytecode
+INCLUDE stream
+INCLUDE stringstream

@@ -1,0 +1,6 @@
+SubDir TOP src primlib socket ;
+
+
+Library liblstpl_socket.a :
+  lstpl_socket.c
+;

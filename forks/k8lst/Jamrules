@@ -1,0 +1,146 @@
+set-profile ;
+set-default-target-locations ;
+OPTIM += -Wall ;
+
+
+iUPtEST = [ Glob "$(TOP)" : ".no_iup" ] ;
+
+if $(iUPtEST) {
+  USE_IUP = ;
+} else {
+  if ! $(USE_IUP) {
+    iUPtEST = [ Glob "$(TOP)/extincs" : "iup.h" ] ;
+    if $(iUPtEST) { USE_IUP = 1 ; }
+  } else {
+    if $(USE_IUP) = "0" { USE_IUP = ; }
+  }
+}
+
+
+if $(FLTK_TEST) {
+  LST_USE_FLTK = tan ;
+}
+
+if $(USE_IUP) {
+  LST_USE_IUP = tan ;
+}
+
+if ! $(LST_FAST_WRITING) {
+  DEFINES += LST_COMPACT_WRITE_WORD ;
+}
+
+
+if $(WINDOZE) {
+  Echo "MSG: windoze build" ;
+  DEFINES += LST_USE_SOCKET=1 ;
+} else {
+  #LST_USE_SQLITE = tan ;
+  #DEFINES += LST_USE_SOCKET=1 ;
+  if $(LST_USE_FLTK) {
+    DEFINES += USE_FLTK ;
+    LINKFLAGS += -lfltk -lfltk_images -lfltk_forms ;
+    C++FLAGS += -pthread ;
+    CFLAGS += -pthread ;
+    LINKFLAGS += -pthread ;
+    C++LINKFLAGS += -pthread ;
+  } else if $(LST_USE_IUP) {
+    Echo "MSG: adding IUP GUI interface" ;
+    DEFINES += LST_USE_IUP ;
+    #LINKFLAGS += -L$(TOP)/extlibs ;
+    HDRS += $(TOP)/extincs ;
+    #LINKFLAGS += -liup -liupcontrols -liupimglib ;
+    #LINKLIBS += $(TOP)/extlibs/libiup.a $(TOP)/extlibs/libiupcontrols.a $(TOP)/extlibs/libiupimglib.a ;
+    lib-config "pkg-config gtk+-2.0" ;
+  } else {
+    DEFINES += LST_USE_X11 ;
+    lib-config "pkg-config x11" ;
+    lib-config "pkg-config xft" ;
+  }
+}
+
+
+HDRS += $(TOP)/src ;
+
+if $(LST_USE_SQLITE) {
+  DEFINES += LST_USE_SQLITE=1 ;
+  lib-config "pkg-config sqlite3" ;
+} else {
+  DEFINES += LST_USE_SQLITE=0 ;
+}
+DEFINES += LST_USE_FFI=1 ;
+
+if $(DEBUG) {
+  DEFINES += DEBUG ;
+  DEFINES += TRACE ;
+} else {
+  LINKFLAGS += -s ;
+}
+
+if $(NOASSERT) {
+  DEFINES += NDEBUG ;  # turn off assert()
+}
+
+if $(NOSTRIP) {
+  Echo "MSG: no stripping" ;
+  LINKFLAGS = [ RemoveOpt "-s" : $(LINKFLAGS) ] ;
+  LINKFLAGS += -g ;
+  OPTIM += -g ;
+}
+
+#LINKLIBS += -lrt ;
+
+
+#####################################################################
+if $(WINDOZE) {
+  WINDOZE_THREADS = -mthreads ;
+  WINDOZE_THREADS = ;
+  WINE = "wine" ;
+  MGPATH = "wine c:\\\\mingw\\\\bin\\\\" ;
+  MGCC = "mingw32-gcc.exe" ;
+  MG++ = "mingw32-g++.exe -static-libgcc" ;
+
+  CC = $(MGPATH)$(MGCC) $(WINDOZE_THREADS) ;
+  LINK = $(MGPATH)$(MGCC) $(WINDOZE_THREADS) ;
+  AR = $(MGPATH)ar.exe -ru ;
+  RANLIB = $(MGPATH)ranlib.exe ;
+  C++ = $(MGPATH)$(MG++) $(WINDOZE_THREADS) ;
+  C++LINK = $(MGPATH)$(MG++) $(WINDOZE_THREADS) ;
+
+  rule UserObject {
+    switch $(>) {
+      case *.rc : ResourceCompiler $(<) : $(>) ;
+      #case *.o : DEPENDS $(<) : $(>) ;
+      case *.o : DummyRule $(<) : $(>) ;
+      case * : ECHO "unknown suffix on" $(>) ;
+    }
+  }
+  rule DummyRule {
+  }
+  rule ResourceCompiler {
+    DEPENDS $(<) : $(>) ;
+    Clean clean : $(<) ;
+  }
+  actions ResourceCompiler {
+    $(MGPATH)windres.exe -i $(>) -o $(<)
+  }
+
+  LINKLIBS += -lkernel32 -luser32 -ladvapi32 -lws2_32 ;
+  #if $(DO_MAP) {
+  #  LINKFLAGS += -Wl,-Map,zpx2.map ;
+  #}
+  #WINSUBSYS = "windows" ;
+  WINSUBSYS = "console" ;
+  #LINKFLAGS += -Wl,-subsystem,console ;
+  SUFEXE = .exe ;
+  if $(DO_MAP) {
+    LINKFLAGS += "-Wl,-Map,ivan.map,-subsystem,$(WINSUBSYS)" ;
+  } else {
+    LINKFLAGS += "-Wl,-subsystem,$(WINSUBSYS)" ;
+  }
+
+  #HDRS += wininc wininc/SDL ;
+  #LINKLIBS += -Lwinlib -lm -lSDL ;
+  #C++LINKLIBS += -Lwinlib -lm -lSDL ;
+} else {
+  LINKFLAGS += -lm ;
+}

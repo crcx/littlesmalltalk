@@ -1,0 +1,30 @@
+important changes:
+  * new memory manager and GC
+  * image format changed
+  * fixed some serious bugs in image builder
+  * image source syntax changed
+  * PushBlock opcode changed: jump dest now follows by the number of temps in block
+  * number of instance/class vars in some objects changed; always use constants
+    from lst_interp.h or you'll find yourself in a big trouble
+  * added Process metamethods for sheduler control and locking
+  * added IfNil: ifNotNil: and corresponding branch opcodes
+  * added '&' and '|'
+  * compiler will optimize things like `c isNil ifTrue: [...]` to `c ifNil: [...]`
+  * compiler will optimize some numeric binary math and string concatenations
+  * compiler and VM allows assigning to method arguments
+  * fixed serious bug in compiler; blocks now can have locals with the same names as
+    surrounding block/method locals
+  * added sample of the preemptive process sheduler
+    (need to add the ability to 'wake up' processes from primitives,
+    so we can have queues, events, mutexes and other funny things)
+  * added GST-style source file parser
+  * added very basic module system
+  * packages implementation (for now it's usable only for information purposes)
+  * compiler will warn about name clashing (but not fail if it is not fatal)
+  * compiler will warn about missing dots (VERY nasty bug; i found some in image
+    sources due to this warning)
+  * process execution completely rewritten: it's not recursive now; this allows
+    assigning processes to event handlers and block returns across process
+    boundaries (wow!) -- see samples/alarm*.st, samples/yield.st
+  * Advanced Code Analyzer (hehe) which can inline simple getters and setters
+  * inlining of some frequently used methods

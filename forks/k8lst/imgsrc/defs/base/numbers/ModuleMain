@@ -1,0 +1,15 @@
+CLASS Number        Magnitude
+
+COMMENT CLASS SmallInt  Number
+RAWCLASS MetaSmallInt  Class         MetaNumber           seed
+RAWCLASS SmallInt      MetaSmallInt  Number
+
+CLASS Integer  Number
+CLASS Float    Number
+
+
+INCLUDE number
+INCLUDE smallint
+INCLUDE integer
+INCLUDE float
+INCLUDE rand

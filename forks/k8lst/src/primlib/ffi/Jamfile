@@ -1,0 +1,6 @@
+SubDir TOP src primlib ffi ;
+
+
+Library liblstpl_ffi.a :
+  lstpl_ffi.c
+;

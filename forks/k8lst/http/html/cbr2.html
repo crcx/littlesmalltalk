@@ -1,0 +1,46 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/css/acb.css" />
+<script src="/js/ahah.js" type="text/javascript"></script>
+<script src="/js/ibox.js" type="text/javascript"></script>
+<script src="/js/queries.js" type="text/javascript"></script>
+</head>
+<body onload="loadPackages()">
+
+<div class="columns">
+ <div class="column">
+  <select size="10" onchange="updateClasses()" name="package">
+  </select>
+ </div>
+ <div class="column">
+  <select size="10" onchange="updateMethods()" name="class">
+  </select>
+ </div>
+ <div class="column">
+  <select size="10" onchange="updateSource()" name="method">
+  </select>
+ </div>
+ <div class="column">
+  <select size="10" name="reserved">
+  </select>
+ </div>
+</div>
+
+<div class="mode">
+ <br />
+ <!--input name="5" value="instance" type="submit" class="submit">
+ <input name="6" value="help" type="submit" class="submit">
+ <input name="7" value="class" type="submit" class="submit"-->
+</div>
+
+<div class="definition">
+ <textarea rows="auto" cols="auto" name="srctext" wrap="soft"></textarea>
+ <br />
+ <input type="button" value="Compile" name="stcompile" onclick="compileMethod()">
+</div>
+<br />
+<div class="definition">
+ <textarea rows="auto" cols="auto" name="sterror" wrap="soft" readonly="yes"></textarea>
+</div>
+
+</body></html>

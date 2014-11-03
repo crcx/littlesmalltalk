@@ -1,0 +1,14 @@
+SubDir TOP src primlib ;
+
+
+##Library liblstprims.a : lst_primitives.c ;
+
+
+SubIncludeOnce JAM_INC_LSTPRIMLIB_STDLIB : TOP src primlib stdlib ;
+SubIncludeOnce JAM_INC_LSTPRIMLIB_FFI    : TOP src primlib ffi ;
+SubIncludeOnce JAM_INC_LSTPRIMLIB_SOCKET : TOP src primlib socket ;
+SubIncludeOnce JAM_INC_LSTPRIMLIB_REGEXP : TOP src primlib relib ;
+if ! $(WINDOZE) {
+  SubIncludeOnce JAM_INC_LSTPRIMLIB_X11    : TOP src primlib x11lib ;
+}
+#SubIncludeOnce JAM_INC_LSTPRIMLIB_SQLITE : TOP src primlib sqlite ;
