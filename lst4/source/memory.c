@@ -78,10 +78,10 @@ gcinit(int staticsz, int dynamicsz)
 	memoryBase = spaceOne;
 	memoryPointer = memoryBase + spaceSize;
 	if (debugging) {
-		printf("space one 0x%x, top 0x%x,"
-				" space two 0x%x , top 0x%x\n",
-			(uint)spaceOne, (uint)(spaceOne + spaceSize),
-			(uint)spaceTwo, (uint)(spaceTwo + spaceSize));
+		printf("space one 0x%p, top 0x%p,"
+				" space two 0x%p , top 0x%p\n",
+		       spaceOne, (spaceOne + spaceSize),
+			spaceTwo, (spaceTwo + spaceSize));
 	}
 	inSpaceOne = 1;
 }
@@ -132,7 +132,7 @@ gc_move(struct mobject * ptr)
 			 && (old_address <= (struct mobject *) memoryTop)) {
 				sysError(
 				 "GC invariant failure -- address in new space",
-					(unsigned int)old_address);
+					(INT_PTR)old_address);
 
 			/* else see if not  in old space */
 			} else if ((old_address < (struct mobject *) oldBase) ||
@@ -379,7 +379,7 @@ objectRead(FILE * fp)
 
 	switch (type) {
 		case 0:	/* nil obj */
-			sysError("read in a null object", (int)newObj);
+			sysError("read in a null object", (INT_PTR)newObj);
 
 		case 1:	/* ordinary object */
 			size = readWord(fp);
@@ -479,7 +479,7 @@ objectWrite(FILE *fp, struct object * obj)
 	int i, size;
 
 	if (obj == 0) {
-		sysError("writing out a null object", (int)obj);
+		sysError("writing out a null object", (INT_PTR)obj);
 	}
 
 	if (IS_SMALLINT(obj)) { /* SmallInt */
@@ -585,7 +585,7 @@ addStaticRoot(struct object **objp)
 	}
 	if (staticRootTop >= STATICROOTLIMIT) {
 		sysError("addStaticRoot: too many static references",
-			(unsigned int)objp);
+			(INT_PTR)objp);
 	}
 	staticRoots[staticRootTop++] = objp;
 }

@@ -23,6 +23,17 @@
 */
 #include <sys/types.h>
 
+
+/* an int that is the same size as a pointer */
+#ifndef INT_PTR
+#ifdef _M_X64
+typedef long long INT_PTR;
+#else
+typedef long INT_PTR;
+#endif
+#endif
+
+
 struct object {
 	uint size;
 	struct object *class;
@@ -40,7 +51,7 @@ struct byteObject {
 	unsigned char bytes[0];
 };
 
-# define BytesPerWord 4
+# define BytesPerWord ((int)sizeof(void *))
 # define bytePtr(x) (((struct byteObject *) x)->bytes)
 #define WORDSUP(ptr, amt) ((struct object *)(((char *)(ptr)) + \
 	((amt) * BytesPerWord)))
@@ -54,12 +65,12 @@ struct byteObject {
  */
 #include <limits.h>
 
-#define IS_SMALLINT(x) ((((int)(x)) & 0x01) != 0)
+#define IS_SMALLINT(x) ((((INT_PTR)(x)) & 0x01) != 0)
 #define FITS_SMALLINT(x) ((((int)(x)) >= INT_MIN/2) && \
 	(((int)(x)) <= INT_MAX/2))
 #define CLASS(x) (IS_SMALLINT(x) ? SmallIntClass : ((x)->class))
-#define integerValue(x) (((int)(x)) >> 1)
-#define newInteger(x) ((struct object *)((((int)(x)) << 1) | 0x01))
+#define integerValue(x) (((INT_PTR)(x)) >> 1)
+#define newInteger(x) ((struct object *)((((INT_PTR)(x)) << 1) | 0x01))
 
 /*
  * The "size" field is the top 30 bits; the bottom two are flags

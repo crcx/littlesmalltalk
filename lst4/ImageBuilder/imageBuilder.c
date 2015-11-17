@@ -247,7 +247,7 @@ int symbolTop = 0;
 struct object *oldSymbols[500];
 
 int
-symbolBareCmp(char * left, int leftsize, char * right, int rightsize)
+symbolBareCmp(unsigned char * left, int leftsize, unsigned char * right, int rightsize)
 {
 	int minsize = leftsize;
 	int i;
@@ -280,7 +280,7 @@ newSymbol(char * text)
 
 		/* first see if it is already a symbol */
 	for (i = 0; i < symbolTop; i++) {
-		if (symbolBareCmp(text, strlen(text),
+		if (symbolBareCmp((unsigned char *)text, strlen(text),
 			bytePtr(oldSymbols[i]), SIZE(oldSymbols[i])) == 0) {
 			return oldSymbols[i];
 		}
@@ -678,7 +678,7 @@ lookupInstance(struct object *class, char *text, int *low)
 		size = 0;
 	}
 	for (i = 0; i < size; i++) {
-		if (symbolBareCmp(text, strlen(text),
+		if (symbolBareCmp((unsigned char *)text, strlen(text),
 		 bytePtr(var->data[i]), (SIZE(var->data[i]))) == 0) {
 			return(*low);
 		}
@@ -1520,7 +1520,7 @@ void
 writeWord(int i, FILE * fp)
 {
 	if (i < 0) {
-		sysError("writeWord: negative value", (void *)i);
+		sysError("writeWord: negative value", (void *)(INT_PTR)i);
 	}
 	if (i >= 255) {
 		fputc(255, fp);
@@ -1583,8 +1583,8 @@ imageOut(FILE *fp, struct object *obj)
 			writeWord(bobj->bytes[i], fp);
 		/*fprintf(fp,"\n");*/
 		if (obj->class == 0) {
-			printf("byte object 0x%x has null class\n",
-				(unsigned int)obj);
+			printf("byte object 0x%p has null class\n",
+				obj);
 		}
 		imageOut(fp, obj->class);
 		return;
@@ -1596,7 +1596,7 @@ imageOut(FILE *fp, struct object *obj)
 	writeWord(1, fp);
 	writeWord(size, fp);
 	if (obj->class == 0) {
-		printf("object 0x%x has null class\n", (unsigned int)obj);
+		printf("object 0x%p has null class\n", obj);
 	}
 	imageOut(fp, obj->class);
 	for (i = 0; i < size; i++) {
