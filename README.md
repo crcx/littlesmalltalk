@@ -27,8 +27,10 @@ various Linux and OS X releases.
 A significant rewrite, this is fairly modern and has a significantly
 smaller and simpler implementation.
 
-As of November 2014, this builds, but dies with a segfault under OS X
-Yosemite.
+As of November 2015, this version:
+
+* Works on 64-bit Linux
+* Builds, but dies with a segfault under OS X and 32-bit Linux
 
 ## v5
 
