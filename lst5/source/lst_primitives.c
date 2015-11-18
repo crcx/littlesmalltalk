@@ -381,7 +381,7 @@ struct object  *primitive(int primitiveNumber, struct object *args,
 #endif
 
     default:
-      sysError("unknown primitive", primitiveNumber);
+	    sysError("unknown primitive", (void *)(INT_PTR)primitiveNumber);
   }
   return (returnedValue);
 }

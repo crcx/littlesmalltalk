@@ -116,10 +116,10 @@ void gcinit(int staticsz, int dynamicsz)
   memoryPointer = memoryBase + spaceSize;
   if(debugging)
   {
-    printf("space one 0x%x, top 0x%x,"
-           " space two 0x%x , top 0x%x\n",
-           (LstUInt) spaceOne, (LstUInt) (spaceOne + spaceSize),
-           (LstUInt) spaceTwo, (LstUInt) (spaceTwo + spaceSize));
+    printf("space one 0x%p, top 0x%p,"
+           " space two 0x%p , top 0x%p\n",
+           spaceOne, (spaceOne + spaceSize),
+           spaceTwo, (spaceTwo + spaceSize));
   }
   inSpaceOne = 1;
 }
@@ -176,7 +176,7 @@ static struct object *gc_move(struct mobject *ptr)
               && (old_address <= (struct mobject *) memoryTop))
       {
         sysError("GC invariant failure -- address in new space",
-                 (unsigned int) old_address);
+                 old_address);
 
         /*
            else see if not  in old space 
@@ -363,7 +363,7 @@ struct object  *gcollect(int sz)
   memoryPointer = WORDSDOWN(memoryPointer, sz + 2);
   if(memoryPointer < memoryBase)
   {
-    sysError("insufficient memory after garbage collection", sz);
+	  sysError("insufficient memory after garbage collection", (void *)(INT_PTR)sz);
   }
   SETSIZE(memoryPointer, sz);
   return (memoryPointer);
@@ -462,7 +462,7 @@ static struct object *objectRead(FILE * fp)
   switch (type)
   {
     case 0:                    /* nil obj */
-      sysError("read in a null object", (int) newObj);
+      sysError("read in a null object", 0);
 
     case 1:                    /* ordinary object */
       size = readWord(fp);
@@ -555,7 +555,7 @@ static void writeWord(FILE * fp, int i)
 {
   if(i < 0)
   {
-    sysError("trying to write out negative value", i);
+	  sysError("trying to write out negative value", (void *)(INT_PTR)i);
   }
   if(i >= 255)
   {
@@ -575,7 +575,7 @@ static void objectWrite(FILE * fp, struct object *obj)
 
   if(obj == 0)
   {
-    sysError("writing out a null object", (int) obj);
+    sysError("writing out a null object", 0);
   }
 
   if(IS_SMALLINT(obj))
@@ -710,7 +710,7 @@ void addStaticRoot(struct object **objp)
   if(staticRootTop >= STATICROOTLIMIT)
   {
     sysError("addStaticRoot: too many static references",
-             (unsigned int) objp);
+             0);
   }
   staticRoots[staticRootTop++] = objp;
 }
@@ -868,7 +868,7 @@ void lstGetString(char *to, int size, struct object *from)
 
   if(fsize > size)
   {
-    sysError("error converting text into unix string", fsize);
+	  sysError("error converting text into unix string", (void *)(INT_PTR)fsize);
   }
   for(i = 0; i < fsize; i++)
   {

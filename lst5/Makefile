@@ -61,8 +61,8 @@ endif
 UNAME_O=$(shell uname -s)
 UNAME_M=$(shell uname -m)
 ifeq (x86_64,$(UNAME_M))
-CFLAGS+=-m32
-LDFLAGS+=-m32
+#CFLAGS+=-m32
+#LDFLAGS+=-m32
 endif
 ifneq ($(UNAME_O), $(filter MinGW Msys, $(UNAME_O)))
 LDFLAGS+=-ldl
