@@ -1868,7 +1868,7 @@ void writeWord(int i, FILE * fp)
 {
   if(i < 0)
   {
-    sysError("writeWord: negative value", "");
+    sysError("writeWord: negative value", (void *)(INT_PTR)i);
   }
   if(i >= 255)
   {
