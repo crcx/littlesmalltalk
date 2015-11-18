@@ -102,7 +102,7 @@ static LST_DL_Handle libs[LS_MAX_OPEN_LIBS];
 #define LstF7 int(*)(int,int,int,int,int,int,int)
 
 
-static int lstMakeArg(struct object *obj, int i)
+static INT_PTR LstMakeArg(struct object *obj, int i)
 {
   static char buf[10][1024];
 
@@ -112,7 +112,7 @@ static int lstMakeArg(struct object *obj, int i)
   if(obj->class == StringClass)
   {
       lstGetString(buf[i], 1024, obj);
-      return (int)buf[i];
+      return (INT_PTR)buf[i];
   }
 
   return integerValue(obj);
@@ -244,48 +244,48 @@ struct object *lstFfiPrimitive(int primitiveNumber, struct object *args)
             break;
 
         case 1:
-            ((void(*)(int))func)((int)lstMakeArg(obj->data[0], 0));
+            ((void(*)(INT_PTR))func)(LstMakeArg(obj->data[0], 0));
             break;
 
         case 2:
-            ((void(*)(int,int))func)((int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1));
+            ((void(*)(INT_PTR,INT_PTR))func)(LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1));
             break;
 
         case 3:
-            ((void(*)(int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2));
             break;
 
         case 4:
-            ((void(*)(int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3));
             break;
 
         case 5:
-            ((void(*)(int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4));
             break;
 
         case 6:
-            ((void(*)(int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5));
             break;
 
         case 7:
-            ((void(*)(int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6));
             break;
 
         case 8:
-            ((void(*)(int,int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6), (int)lstMakeArg(obj->data[7], 7));
+            ((void(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6), LstMakeArg(obj->data[7], 7));
             break;
         }
 
@@ -313,48 +313,48 @@ struct object *lstFfiPrimitive(int primitiveNumber, struct object *args)
             break;
 
         case 1:
-            j = ((int(*)(int))func)((int)lstMakeArg(obj->data[0], 0));
+            j = ((int(*)(INT_PTR))func)(LstMakeArg(obj->data[0], 0));
             break;
 
         case 2:
-            j = ((int(*)(int,int))func)((int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1));
+            j = ((int(*)(INT_PTR,INT_PTR))func)(LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1));
             break;
 
         case 3:
-            j = ((int(*)(int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2));
             break;
 
         case 4:
-            j = ((int(*)(int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3));
             break;
 
         case 5:
-            j = ((int(*)(int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4));
             break;
 
         case 6:
-            j = ((int(*)(int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5));
             break;
 
         case 7:
-            j = ((int(*)(int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6));
             break;
 
         case 8:
-            j = ((int(*)(int,int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6), (int)lstMakeArg(obj->data[7], 7));
+            j = ((int(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6), LstMakeArg(obj->data[7], 7));
             break;
         }
 
@@ -382,48 +382,48 @@ struct object *lstFfiPrimitive(int primitiveNumber, struct object *args)
             break;
 
         case 1:
-            str = ((char*(*)(int))func)((int)lstMakeArg(obj->data[0], 0));
+            str = ((char*(*)(INT_PTR))func)(LstMakeArg(obj->data[0], 0));
             break;
 
         case 2:
-            str = ((char*(*)(int,int))func)((int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1));
+            str = ((char*(*)(INT_PTR,INT_PTR))func)(LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1));
             break;
 
         case 3:
-            str = ((char*(*)(int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2));
             break;
 
         case 4:
-            str = ((char*(*)(int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3));
             break;
 
         case 5:
-            str = ((char*(*)(int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4));
             break;
 
         case 6:
-            str = ((char*(*)(int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5));
             break;
 
         case 7:
-            str = ((char*(*)(int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6));
             break;
 
         case 8:
-            str = ((char*(*)(int,int,int,int,int,int,int,int))func)(
-                (int)lstMakeArg(obj->data[0], 0), (int)lstMakeArg(obj->data[1], 1), (int)lstMakeArg(obj->data[2], 2),
-                (int)lstMakeArg(obj->data[3], 3), (int)lstMakeArg(obj->data[4], 4), (int)lstMakeArg(obj->data[5], 5),
-                (int)lstMakeArg(obj->data[6], 6), (int)lstMakeArg(obj->data[7], 7));
+            str = ((char*(*)(INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR,INT_PTR))func)(
+                LstMakeArg(obj->data[0], 0), LstMakeArg(obj->data[1], 1), LstMakeArg(obj->data[2], 2),
+                LstMakeArg(obj->data[3], 3), LstMakeArg(obj->data[4], 4), LstMakeArg(obj->data[5], 5),
+                LstMakeArg(obj->data[6], 6), LstMakeArg(obj->data[7], 7));
             break;
         }
 
@@ -492,7 +492,7 @@ struct object *lstFfiPrimitive(int primitiveNumber, struct object *args)
       break;
     
     default:
-      sysError("Primitive not done! - Unknown FFI primitive number: ", primitiveNumber);
+	    sysError("Primitive not done! - Unknown FFI primitive number: ", (void *)(INT_PTR)primitiveNumber);
   }
 
   return result;

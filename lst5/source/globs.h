@@ -114,7 +114,7 @@ typedef long long LstLInt;
 
 int             fileIn(FILE * fp),
                 fileOut(FILE * fp);
-void            sysError(char *, unsigned int),
+void            sysError(char *, void *),
                 flushCache(void);
 
 extern char *lstTmpDir;

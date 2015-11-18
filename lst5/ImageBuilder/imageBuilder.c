@@ -1868,7 +1868,7 @@ void writeWord(int i, FILE * fp)
 {
   if(i < 0)
   {
-    sysError("writeWord: negative value", (void *) i);
+    sysError("writeWord: negative value", (void *)(INT_PTR)i);
   }
   if(i >= 255)
   {
@@ -1898,7 +1898,7 @@ void imageOut(FILE * fp, struct object *obj)
 
   if(obj == 0)
   {
-    sysError("writing out null object", 0);
+    sysError("writing out null object", "");
     return;
   }
 
@@ -1953,7 +1953,7 @@ void imageOut(FILE * fp, struct object *obj)
     }
     if(obj->class == 0)
     {
-      printf("byte object 0x%x has null class\n", (unsigned int) obj);
+      printf("byte object 0x%p has null class\n", obj);
     }
     imageOut(fp, obj->class);
     return;
@@ -1970,7 +1970,7 @@ void imageOut(FILE * fp, struct object *obj)
   writeWord(size, fp);
   if(obj->class == 0)
   {
-    printf("object 0x%x has null class\n", (unsigned int) obj);
+    printf("object 0x%p has null class\n", obj);
   }
   imageOut(fp, obj->class);
   for(i = 0; i < size; i++)

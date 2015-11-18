@@ -91,9 +91,9 @@ unsigned int    debugging = 0,
   gccount = 0;
 char *lstTmpDir = DefaultTmpdir;
 
-void sysError(char *a, unsigned int b)
+void sysError(char *a, void *b)
 {
-  fprintf(stderr, "unrecoverable system error: %s 0x%x\n", a, b);
+  fprintf(stderr, "unrecoverable system error: %s 0x%p\n", a, b);
   exit(1);
 }
 

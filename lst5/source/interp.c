@@ -305,7 +305,7 @@ static struct object *do_Integer(int op, struct object *low,
       return ((l == h) ? trueObject : falseObject);
 
     default:
-      sysError("Invalid op table jump", op);
+      sysError("Invalid op table jump", (void *)(INT_PTR)op);
   }
   return (NULL);
 }
@@ -538,7 +538,7 @@ int execute(struct object *aProcess, int ticks)
             stack->data[stackTop++] = falseObject;
             break;
           default:
-            sysError("unknown push constant", low);
+            sysError("unknown push constant", (void *)(INT_PTR)low);
         }
         break;
 
@@ -665,7 +665,7 @@ int execute(struct object *aProcess, int ticks)
              receiverClass->data[nameInClass],
              messageSelector);
       checkCache:
-        low = ((LstUInt) (((LstInt) messageSelector) + ((LstInt) receiverClass))) % cacheSize;
+        low = ((LstUInt) (((LstInt) (INT_PTR)messageSelector) + ((LstInt) (INT_PTR)receiverClass))) % cacheSize;
         if((cache[low].name == messageSelector) &&
            (cache[low].class == receiverClass))
         {
@@ -795,7 +795,7 @@ int execute(struct object *aProcess, int ticks)
               returnedValue = trueObject;
             break;
           default:
-            sysError("unimplemented SendUnary", low);
+            sysError("unimplemented SendUnary", (void *)(INT_PTR)low);
         }
         stack->data[stackTop++] = returnedValue;
         break;
@@ -1536,13 +1536,13 @@ int execute(struct object *aProcess, int ticks)
             return (ReturnBreak);
 
           default:
-            sysError("invalid doSpecial", low);
+            sysError("invalid doSpecial", (void *)(INT_PTR)low);
             break;
         }
         break;
 
       default:
-        sysError("invalid bytecode", high);
+	      sysError("invalid bytecode", (void *)(INT_PTR)high);
         break;
     }
   }
