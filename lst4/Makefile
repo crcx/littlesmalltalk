@@ -8,6 +8,7 @@ CFLAGS=-g -Wall
 LIBS=
 
 default:
+	-mkdir bin
 	make st
 	make image
 

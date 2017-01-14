@@ -31,13 +31,15 @@
 
 extern object unSyms[], binSyms[], keySyms[];
 extern boolean primitive();
+extern int floatBinary();
+extern int intBinary();
 
 # define nextByte byteToInt(bytecodes[byteCounter++])
 # define ipush(x) incr(stack[stacktop++] = x)
 /* note that ipop leaves a ref count on the popped object */
 # define ipop(x)  x=stack[--stacktop]; stack[stacktop]=nilobj
 
-execute(method, byteCounter, stack, stacktop, arguments, temporaries)
+void execute(method, byteCounter, stack, stacktop, arguments, temporaries)
 object method, *stack, *arguments, *temporaries;
 register int byteCounter;
 register int stacktop;

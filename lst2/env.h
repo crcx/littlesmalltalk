@@ -48,3 +48,5 @@ typedef unsigned char byte;
 # define INITIALIMAGE "imageFile"
  
 # define TEMPFILENAME "/usr/tmp/lstXXXXXX"
+
+extern void sysError();

@@ -29,7 +29,7 @@ static int  pushindex;		/* index of last pushed back char */
 static char cc;			/* current character */
 
 /* lexinit - initialize the lexical analysis routines */
-lexinit(str)
+void lexinit(str)
 char *str;
 {
 	pushindex = 0;
@@ -39,7 +39,7 @@ char *str;
 }
 
 /* pushBack - push one character back into the input */
-static pushBack(c)
+static void pushBack(c)
 char c;
 {
 	pushBuffer[pushindex++] = c;

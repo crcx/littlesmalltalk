@@ -15,6 +15,11 @@
 #include "names.h"
 #include "lex.h"
 
+extern void setInstanceVariables();
+extern boolean parse();
+extern void lexinit();
+extern void initCommonSymbols();
+
 #define SymbolTableSize 71
 #define GlobalNameTableSize 53
 #define MethodTableSize 39

@@ -17,6 +17,8 @@
 
 # include <stdio.h>
 # include <math.h>
+# include <stdlib.h>
+# include <string.h>
 # include "env.h"
 # include "memory.h"
 # include "names.h"
@@ -30,6 +32,11 @@
 extern object doInterp();
 extern double modf();
 extern char *getenv();
+extern object getClass(object);
+extern void setInstanceVariables();
+extern void imageWrite();
+extern boolean parse();
+extern void flushMessageCache();
 
 char tempfilename[100];		/* temp file for editing */
 
@@ -223,7 +230,7 @@ int number, firstarg;
 int intBinary(number, firstarg, secondarg)
 register int firstarg, secondarg;
 int number;
-{	boolean binresult;
+{	boolean binresult=0;
 
 	switch(number) {
 		case 0:
@@ -378,7 +385,7 @@ double firstarg;
 int floatBinary(number, first, second)
 int number;
 double first, second;
-{	 boolean binResult;
+{	 boolean binResult=0;
 
 	switch(number) {
 		case 0: first += second; break;

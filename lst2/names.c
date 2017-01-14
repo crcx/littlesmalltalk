@@ -166,8 +166,7 @@ char *str;
 	   text duplicates that found in nameTableLookup, only using
 	   string comparison instead of symbol comparison */
 	newSym = basicAt(symbols, hash+1);
-/*** Crashes here! -- CRC 2007/06/16 ***/
-	if (streq(str, charPtr(newSym)))
+	if (charPtr(newSym) != NULL  && streq(str, charPtr(newSym)))
 		return(newSym);
 
 	/* not in table, look along links */

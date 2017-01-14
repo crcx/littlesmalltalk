@@ -112,7 +112,8 @@ int memorySize;
 object alcObject(memorySize, memoryType)
 int memorySize;
 int memoryType;
-{	int position, trip;
+{	int position;
+	int trip;
 
 	if (memorySize >= 256) {
 		sysError("allocation bigger than 256","");
@@ -148,7 +149,7 @@ int memoryType;
 	objectTable[position].referenceCount = 0;
 	objectTable[position].class = nilobj;
 	objectTable[position].type = memoryType;
-	return(position << 1);
+	return (position << 1);
 }
 
 object allocSymbol(str)
