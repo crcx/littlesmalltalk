@@ -37,6 +37,7 @@ struct objectStruct {
 	};
 
 extern struct objectStruct objectTable[];
+extern void sysDecr();
 
 /* types of object memory */
 # define objectMemory 0
@@ -92,7 +93,7 @@ extern object allocFloat();
 /*
 	integer objects are (but need not be) treated specially.
 In this memory manager, negative integers are just left as is, but
-position integers are changed to x*2+1.  Either a negative or an odd
+positive integers are changed to x*2+1.  Either a negative or an odd
 number is therefore an integer, while a nonzero even number is an
 object pointer (multiplied by two).  Zero is reserved for the object ``nil''
 Since newInteger does not fill in the class field, it can be given here.
@@ -101,7 +102,9 @@ until names.h
 */
 
 extern object intobj;
+
 # define isInteger(x) ((x) & 0x8001)
+
 # define newInteger(x) ( (intobj = x)<0 ? intobj : (intobj<<1)+1 )
 # define intValue(x) ( (intobj = x)<0 ? intobj : (intobj>>1) )
 

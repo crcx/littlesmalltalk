@@ -37,6 +37,9 @@ object processStack[ProcessStackMax];
 int processStackTop = 0;
 
 void sendMessage(object, object, int);
+void executeFromContext();
+extern void execute();
+extern object getClass();
 
 
 /*
@@ -49,7 +52,7 @@ struct {
 	object startClass, messageSymbol, methodClass, theMethod;
 	} methodCache[ProcessCacheSize];
 
-prpush(newobj)
+void prpush(newobj)
 object newobj;
 {
 	incr(processStack[processStackTop++] = newobj);
@@ -58,7 +61,7 @@ object newobj;
 }
 
 /* flush out cache so new methods can be read in */
-flushMessageCache()
+void flushMessageCache()
 {	int i;
 
 	for (i = 0; i < ProcessCacheSize; i++)
@@ -102,7 +105,7 @@ object message, startingClass;
 /* newContext - create a new context.  Note this returns three values,
 via side effects
 */
-static newContext(method, methodClass, contextobj, argobj, tempobj)
+static void newContext(method, methodClass, contextobj, argobj, tempobj)
 object method, methodClass, *contextobj, argobj, *tempobj;
 {	int temporarysize;
 
@@ -123,7 +126,7 @@ int argumentPosition;
 {	object method, methodClass, size;
 	object contextobj, tempobj, argobj, errMessage;
 	int i, hash, bytecounter, temporaryPosition, errloc;
-	int argumentsize, temporarySize;
+	int argumentsize, temporarySize=0;
 	boolean done;
 
 	/* compute size of arguments part of stack */
@@ -257,7 +260,7 @@ int argumentPosition;
 /*
 	execute from a context rather than from the process stack
 */
-executeFromContext(context, bytecounter)
+void executeFromContext(context, bytecounter)
 object context;
 int bytecounter;
 {	object method, methodclass, arguments, temporaries;
@@ -313,7 +316,7 @@ int bytecounter;
 	}
 }
 
-flushstack()
+void flushstack()
 {
 	while (processStackTop > 0) {
 		decr(processStack[--processStackTop]);
@@ -321,7 +324,7 @@ flushstack()
 		}
 }
 
-static interpush(interp, value)
+static void interpush(interp, value)
 object interp, value;
 {
 	int stacktop;

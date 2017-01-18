@@ -44,6 +44,8 @@
 #define instanceLimit 16	/* maximum number of instance vars permitted */
 #define methodLimit 32		/* maximum number of methods permitted */
 
+extern void lexinit();
+
 extern object binSyms[];
 extern object keySyms[];
 extern char *unStrs[], *binStrs[], *keyStrs[];

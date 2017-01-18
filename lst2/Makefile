@@ -1,7 +1,7 @@
 #
 # Makefile for Little Smalltalk, version 2
 #
-CFLAGS = -O2 -Wall -g
+CFLAGS = -O2 -Wall -g -Wno-sequence-point -Wno-nonnull -Wno-unused-result -Wno-deprecated-declarations
 
 COMMONc = memory.c names.c lex.c parser.c
 COMMONo = memory.o names.o lex.o parser.o

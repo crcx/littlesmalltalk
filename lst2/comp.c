@@ -10,7 +10,12 @@
 # include "memory.h"
 # include "names.h"
 
-main(argc, argv) 
+extern 	void buildInitialNameTables();
+extern	void readFile();
+extern	void imageWrite();
+extern	void initMemoryManager();
+
+int main(argc, argv) 
 int argc;
 char **argv;
 { FILE *fp;
@@ -37,5 +42,5 @@ char **argv;
 	if (fp == NULL) sysError("error during image file open","imageFile");
 	imageWrite(fp);
 	ignore fclose(fp);
-
+	return 0;
 }
