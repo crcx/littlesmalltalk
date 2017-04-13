@@ -439,9 +439,9 @@ execute(struct object *aProcess, int ticks)
 	    high = VAL;
 	    bytePointer += VALSIZE;
 	    rootStack[rootTop++] = context;
-	    op = rootStack[rootTop++] = 
-	     gcalloc(x = integerValue(method->data[stackSizeInMethod]));
+	    op = gcalloc(x = integerValue(method->data[stackSizeInMethod]));
 	    op->class = ArrayClass;
+	    rootStack[rootTop++] = op;
 	    bzero(bytePtr(op), x * BytesPerWord);
 	    returnedValue = gcalloc(blockSize);
 	    returnedValue->class = BlockClass;
@@ -576,9 +576,9 @@ checkCache:
 	    rootStack[rootTop++] = method;
 	    rootStack[rootTop++] = context;
 	    low = integerValue(method->data[temporarySizeInMethod]);
-	    op = rootStack[rootTop++] = 
-	     gcalloc(x = integerValue(method->data[stackSizeInMethod]));
+	    op = gcalloc(x = integerValue(method->data[stackSizeInMethod]));
 	    op->class = ArrayClass;
+	    rootStack[rootTop++] = op;
 	    bzero(bytePtr(op), x * BytesPerWord);
 	    if (low > 0) {
 		    int i;

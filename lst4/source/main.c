@@ -37,9 +37,9 @@ unsigned int debugging = 0, cacheHit = 0, cacheMiss = 0, gccount = 0;
 static char *tmpdir = DefaultTmpdir;
 
 void
-sysError(char * a, unsigned int b)
+sysError(char * a, unsigned long b)
 {
-	fprintf(stderr,"unrecoverable system error: %s 0x%x\n", a, b);
+	fprintf(stderr,"unrecoverable system error: %s 0x%lx\n", a, b);
 	exit(1);
 }
 
