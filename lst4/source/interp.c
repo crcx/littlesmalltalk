@@ -547,8 +547,15 @@ checkCache:
 			    if (messageSelector == badMethodSym) {
 				    sysError("doesNotUnderstand: missing", 0);
 			    }
+			    rootStack[rootTop++] = arguments;
+			    rootStack[rootTop++] = messageSelector;
+			    rootStack[rootTop++] = context;
 			    op = gcalloc(2);
 			    op->class = ArrayClass;
+			    context = rootStack[--rootTop];
+			    messageSelector = rootStack[--rootTop];
+			    arguments = rootStack[--rootTop];
+
 			    op->data[receiverInArguments] =
 				    arguments->data[receiverInArguments];
 			    op->data[1] = messageSelector;
