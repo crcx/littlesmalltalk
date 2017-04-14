@@ -534,8 +534,8 @@ findMethodFromSymbol:
 		    bytePtr(receiverClass->data[nameInClass]),
 		    bytePtr(messageSelector));
 checkCache:
-	    low = (((INT_PTR) messageSelector) +
-		    ((INT_PTR) receiverClass)) % cacheSize;
+	    low = (((UINT_PTR) messageSelector) +
+		    ((UINT_PTR) receiverClass)) % cacheSize;
 	    if ((cache[low].name == messageSelector) &&
 		(cache[low].class == receiverClass)) {
 		    method = cache[low].method;
