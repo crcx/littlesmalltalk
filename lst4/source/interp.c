@@ -534,8 +534,8 @@ findMethodFromSymbol:
 		    bytePtr(receiverClass->data[nameInClass]),
 		    bytePtr(messageSelector));
 checkCache:
-	    low = (((INT_PTR) messageSelector) +
-		    ((INT_PTR) receiverClass)) % cacheSize;
+	    low = (((UINT_PTR) messageSelector) +
+		    ((UINT_PTR) receiverClass)) % cacheSize;
 	    if ((cache[low].name == messageSelector) &&
 		(cache[low].class == receiverClass)) {
 		    method = cache[low].method;
@@ -547,8 +547,15 @@ checkCache:
 			    if (messageSelector == badMethodSym) {
 				    sysError("doesNotUnderstand: missing", 0);
 			    }
+			    rootStack[rootTop++] = arguments;
+			    rootStack[rootTop++] = messageSelector;
+			    rootStack[rootTop++] = context;
 			    op = gcalloc(2);
 			    op->class = ArrayClass;
+			    context = rootStack[--rootTop];
+			    messageSelector = rootStack[--rootTop];
+			    arguments = rootStack[--rootTop];
+
 			    op->data[receiverInArguments] =
 				    arguments->data[receiverInArguments];
 			    op->data[1] = messageSelector;

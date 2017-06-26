@@ -28,8 +28,10 @@
 #ifndef INT_PTR
 #ifdef _M_X64
 typedef long long INT_PTR;
+typedef unsigned long long UINT_PTR;
 #else
 typedef long INT_PTR;
+typedef unsigned long UINT_PTR;
 #endif
 #endif
 
