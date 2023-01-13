@@ -1,0 +1,505 @@
+.ce
+\fBLittle Smalltalk Installation Notes\fP
+.sp
+.NH
+Installation Notes
+.PP
+There are four basic steps involved in installing the Little Smalltalk
+system.  The four steps are; unbundling the sources, editing the sources to
+tailor them to the target installation, compiling the sources, and moving
+the final binary to the local executables directory.  Each of these four 
+steps are described in following paragraphs and in succeeding sections.
+.ds RF \(DY
+.PP
+As distributed, the Little Smalltalk source consists of a small number of
+files in ``bundle'' format.  A shell script, \fBunbundle\fP, is provided
+that creates the various subdirectories used by the system and unbundles
+the distribution files into their component parts.  To execute this shell
+script, type, in a directory containing all the files in the distribution,
+the following command:
+.DS I
+sh unbundle
+.DE
+.LP
+A large amount of output should follow, indicating files have been
+unbundled into subdirectories /sources, /parser, /prelude, /tests, /docs 
+and /bin.
+.PP
+There are a small number of editing changes required to tailor the system to 
+various different environments.  Section 2 describes these changes in detail for
+various types of machines and operating systems.
+.PP
+Once the necessary tailoring has been performed, the system can then be
+compiled by typing the command:
+.DS I
+make install
+.DE 
+.LP
+in the base directory (the original directory from which the source was
+unbundled).  This command will then invoke further make commands which
+produce the parser, the executable system, and the standard prelude.
+In addition various self checks for correctness are provided.  Should it be
+necessary, various subcomponents of the system can be individually produced
+by typing the ``make install'' commands in the appropriate subdirectory.
+These commands produce a considerable amount of output.
+.PP
+Once the system has been compiled and successfully passed all self tests,
+the executable file in /bin/st should be linked or moved to the appropriate
+location for local executables on the target system.
+Finally, the object files for all compilations can be removed by typing
+``make clean''.
+.NH 1
+Specific Machine Installation Instructions
+.PP
+A single source form and command syntax cannot be used for all combinations of
+machine / operating systems, because of differences in library routine syntax
+or function availability.  An attempt has been made to surround the occurrences
+of such features with conditional compilation directives, so that by defining
+or not defining a symbol the correct result can be produced on different
+systems.  These commands have all been collected in the include file
+parser/env.h, so for the most part this should be the principle file needing
+to be edited.  In addition, ``meta-defines'' are provided for many systems to
+which the Little Smalltalk system has already been ported.  By defining one
+of these ``meta-defines'', correct values are given for the remainder of the
+symbols.
+.PP
+Similarly, the ``standard'' set of flags necessary to use the compiler and/or
+loader differ from system to system.  These are given by the two defined
+strings, CFLAGS and LFLAGS, in sources/Makefile and parser/Makefile.
+.PP
+As distributed, the Little Smalltalk system expects the various
+subdirectories to remain in the relationship in which they are unbundled.
+If desired, however, they can be moved (say to place the sources in one
+place, the libraries in another, and the binary in a third).  Each makefile
+may contain one of either the strings BINDIR or PARSEDIR at the beginning.
+If the binary or parser sources directory is moved, relative the the
+directory containing the makefile,
+these strings should be changed.  Otherwise, if the
+relative positions of the directories remain as they were unbundled, the
+default values for these strings can be used.
+.PP
+There are a few places where path specifications must be given in either
+the Makefiles or in C sources.  These are described in the following sections.
+.PP
+Finally, bytecodes are kept in the form of ``unsigned characters''; that is,
+characters containing numbers from 0-255.  These may or may not be
+supported on various machines.  The file parser/env.h contains a typedef
+for the type `uchar' and two macros for converting from unsigned characters
+to integers and back again.  These should be defined in such a manner that
+the appearance of unsigned characters is achieved, whether or not they are
+actually supported.  A simple test program, called uchar.c, is provided in
+/parser.  This program can be used to test the correctness of the macros
+defined in env.h.
+Generally, either the model of the VAX-780 or the PDP11/70 should be sufficient.
+.NH 2
+Bringing Little Smalltalk Up on a New System
+.PP
+If the system you are attempting to port to is not one of the systems described
+in the following sections, a certain amount of experimentation will probably be
+necessary to successfully install the system.  This section will describe some
+of the major changes required; what other changes may be necessary is 
+generally unpredictable.
+.PP
+The strings CFLAGS and LFLAGS in sources/Makefile and parser/Makefile should
+be set to the appropriate values for ``normal'' compiles and loads of
+C programs.
+.PP
+The file prelude/Makefile contains a hard path in the string PREPATH.
+This should be set to the path to the prelude directory.
+.PP
+The file parser/env.h contains various hard paths, which are described in
+that file.  Also in that file, the following symbols should be defined or
+left undefined, depending upon the availability of various features.
+.IP CURSES 1i
+This symbol should be defined if it is desired to provide the simple ascii
+graphics given by the curses and termcap packages.  See section on
+graphics below.
+.IP ENVSAVE 1i
+This symbol should be defined if it is necessary to save the value of the
+global varible \fIenviron\fP during a fastload.
+This is necessary on the 11/70, IBM PC, possibly other machines.
+.IP FACTMAX 1i
+This symbol should be defined to be the largest integer for which the factorial
+can be computed by repeated multiplication without overflow.
+This value is generally 12 for 32 bit machines and 8 for 16 bit machines.
+.IP FASTDEFAULT 1i
+This symbol should be defined if the default behavior of the system should
+be to perform a fast load on the standard prelude (see section 3).
+.IP FLUSHREQ 1i
+If defined a fflush() is given after every call to printf.
+.IP GAMMA 1i
+This symbol should be defined if the gamma() function is part of the standard
+math library, left undefined otherwise.
+.IP INLINE 1i
+This symbol should be defined if in-line code is desired for object increments
+and decrements.  In line code is generally slightly faster, although the code
+size is slightly larger.  If this symbol is not defined subroutine calls
+will be generated for object increments and decrements.
+.IP NOSYSTEM 1i
+This symbol should be defined on non-unix systems for which the
+``system()'' call is not supported.  As this seriously limits functionality
+(i.e. class descriptions cannot be modified during execution) is should not
+be used unless necessary.
+.IP OPEN3ARG 1i
+This symbol should be defined if Berkeley 4.2 style open 
+statements (3 arguments)
+are used.  If the older, 2 argument, format is used this symbol should be left
+undefined.
+.IP PLOT3 1i
+This symbol should be defined if you have terminals for which the plot(3)
+routines can write directly to the screen, rather than requiring a
+postprocessing filter.  See section on graphics below.
+.IP SETJUMP 1i
+This symbol should be defined if the setjump/longjump facility is
+available.  This is used ONLY in the file sources/process.c to implement
+recovery when the user has typed an interrupt character.
+.IP SHORTDATA 1i
+If this symbol is defined various heuristics are used to reduce the data 
+segment size, at the expense of functionality or execution speed.  Should
+only be defined if absolutely necessary.
+.IP SIGS
+This symbol should be defined if the signals facility is available.  This
+is used ONLY in the file sources/process.c to implement recovery when the
+user has typed an interrupt character.
+.PP
+Also in parser/env.h, defines are provided to implement the datatype
+``unsigned character''.  These were described in the last section.  Generally,
+either following the model of the VAX-780 or the PDP11/70 should be sufficient
+for most machines.
+.NH 2
+Berkeley lookalikes
+.PP
+It has been reported that following the directions for Berkeley 4.2
+(below) is also sufficient for the following systems:
+.DS I
+Ahmdal / System V
+Pyramid 90x / System V
+Sequent Balance 8000
+.DE
+.NH 2
+Berkeley near-lookalikes
+.PP
+It has also been reported that following the directions for Berkeley 4.2 is
+sufficient for installation on the following systems, with the 
+one change that the symbol ENVSAVE should be defined in parser/env.h.
+Note that on these systems, and other systems sharing the same
+characteristics, the only indication that ENVSAVE should be defined will be
+an obscure error message (usually ``-f: is not an identifier'') produced by the
+shell if an attempt is made to load a class description following a
+fast-load.
+.DS I
+Plexus P/35
+Tektronix 6130 (presumably other Tek 61xx and 62xx machines).
+.DE
+.NH 2
+AT&T 3B2, System V
+.PP
+The 3B2 does not have floating point hardware, and thus requires floating
+point simulation software being linked in.  This is accomplished by adding
+``\-f'' to CFLAGS \fIand\fP LFALGS in the makefiles in /sources and
+/parser.  Other than for this change, the instructions for Berkeley 4.2 can
+be used for the installation.
+.NH 2
+Dec Professional 350
+.PP
+In parser/Makefile the strings CFLAGS and LFLAGS should be left blank.
+In sources/Makefile, however, the string CFLAGS should be defined to be ``\-m'',
+to indicate the use of the code-mapping feature.  The normal construction rule
+for the executable file st should be commented out, and the more complicated
+loader instruction inserted in its place.  The appropriate rule is given in
+a comment in the Makefile.
+.PP
+The string PREPATH in prelude/Makefile should be defined to be the path to
+the prelude directory (this can be discovered by typing ``pwd'' in the
+prelude directory).
+.PP
+In parser/env.h the ``meta-define'' DECPRO should be given, and any other
+meta-defines removed.
+Also in env.h the paths in the strings TEMPFILE, PARSER and PRELUDE should
+be defined.  Note that /usr/tmp is not standard on Venix systems, and /tmp
+should be used instead.
+.PP
+Because of the severe memory limitations on this machine, only Smalltalk
+programs that produce a relatively small number of objects can be executed.
+In fact, some of the later self tests fail with ``can't happen 1'' (out of
+memory space).
+Also, as more primitives are added to the system the size of primitive.o
+keeps creeping towards the magic 8K limit on object file sizes for the code
+mapping feature.  Eventually it may be necessary to split primitive.c into
+two files in order to avoid this problem.
+.NH 2
+HP 9000 / HP-UX
+.PP
+Follow the instructions for the VAX 780 / Berkeley 4.2 (below) with the
+exception that the meta-define should be given as HP9000 instead of BERK42.
+Note that in the filenames in env.h that /usr has been changed to /users,
+except for /usr/tmp, which hasn't (a foolish consistency is the hobgoblin
+of little minds).
+The fastsave routines have not been adapted to the HP extended memory
+system, and thus fastsave should not be used.
+.NH 2
+IBM PC-XT
+.PP
+It has been reported that the instructions given for the PDP 11/70 (below)
+are also sufficient for the IBM PC-XT running PC/IX.
+.NH 2
+PDP 11/70 (also 11/44)
+.PP
+In sources/Makefile and parser/Makefile the string CFLAGS should be left blank,
+however LFLAGS should be set to ``\-i'' to indicate the use of
+separate instruction and data spaces.  
+.PP
+The string PREPATH in prelude/Makefile should be defined to be the path to
+the prelude directory (this can be discovered by typing ``pwd'' in the
+prelude directory).
+.PP
+In parser/env.h the ``meta-define'' PDP1170 should be given, and any other
+meta-defines removed.
+Also in env.h the paths in the strings TEMPFILE, PARSER and PRELUDE should
+be defined.
+.NH 2
+Perkin Elmer
+.PP
+The Perkin Elmer supports unsigned characters the same as the VAX, however
+it does not have the gamma function in the standard library.  Follow the
+instructions for the VAX/4.2, using the meta-define PERKELM.
+.NH 2
+RIDGE / ROS 3.0
+.PP
+Follow the instructions for the VAX 780 /Berkeley 4.2 (below), 
+with the exception that the
+meta-define should be given as RIDGE instead of BERK42.
+The fast save feature does not work on the Ridge.
+.NH 2
+VAX 780 / Berkeley 4.2
+.PP
+In parser/Makefile and sources/Makefile the strings CFLAGS and LFLAGS should
+both be left blank.
+.PP
+The string PREPATH in prelude/Makefile should be defined to be the path to
+the prelude directory (this can be discovered by typing ``pwd'' in the
+prelude directory).
+.PP
+In parser/env.h the ``meta-define'' BERK42 should be given, and any other
+meta-defines removed.
+Also in env.h the paths in the strings TEMPFILE, PARSER and PRELUDE should
+be defined.
+.PP
+(VAX only) If the \-g flag is used the define FLUSHREQ need not be given 
+(although it
+will work if it is present), otherwise FLUSHREQ should be defined in order
+for input and output to interleave correctly.
+.PP
+As distributed, the system does not perform a fastload (see next section)
+automatically.  If fastload works this can be made default by defining the
+symbol FASTDEFAULT.
+.PP
+These instructions appear to work also for the SUN workstation; of course,
+if you have a SUN workstation you can run the Xerox system.
+.NH
+Fast Loading
+.PP
+The Little Smalltalk system has the ability to save and restore a user
+environment by basically moving a copy of all of the users data space into
+a file.  Although this produces rather large files, the savings in time
+permitted by not having to recreate a specific environment can be
+substantial.  Because this is such an unusual thing to do, it is probably
+wise, if installing the system on a new machine/operating system, to first
+comment out the define for FASTDEFAULT in parser/env.h, 
+which will install a system which will not default to doing a fast load.
+.PP
+Once such a system has been created and passed all self tests, you can
+experiment with fast loading by executing the st command with the argument
+\-f.  For test cases you can use the programs in /tests.  If it appears to
+be successful, then (by defining the variable FASTDEFAULT) you should
+regenerate the system so that the default behavior is to do a fast loading.
+(When regenerating the system, sources/main.c should be the only file
+needing to be recompiled).
+.PP
+Fastloading does not currently work on the HP-9000.
+It may not work on other machines as well.
+.NH
+Protections
+.PP
+The directories /sources and /parser need not be readable by casual users.
+The directory /prelude contains files, however, which must be loaded by
+the Little Smalltalk system prior to every execution.  The protection of this
+directory, and on the files in it, should therefore be such that all users
+have READ access.
+Although the /tests directory is only used during system installation,
+users may want to refer to it for examples of class descriptions and to see
+how various problems (8 queens, dinning philosophers) have been solved in
+Smalltalk.
+Allowing all users access to the /docs directory will permit a kind of
+on-line access, however users should not be allowed to modify any files in
+any directory.
+.NH
+Non-UNIX systems
+.PP
+Non-UNIX\s-2\u*\d\s+2
+.FS
+* UNIX is a trademark of AT&T Bell Laboratories.
+.FE
+systems which do not support multiple user processes, and thus the
+system() call, cannot at current run Little Smalltalk.  There are plans,
+however, to at some time in the future support such systems.  This section
+will describe, in broad terms, the changes required.  The detailed changed
+are, of course, at the moment not known.
+.PP
+First, the defined value NOSYSTEM must be given in parser/env.h.  This
+will cause all occurrences of the ``system()'' call to be commented out,
+and in most cases be replaced by error messages.
+.PP
+Next, the parser must be modified to place its output in a file (presumably
+the file given as argument with .st replaced by .p) instead of the standard
+output.  This is a trivial, although probably system specific, change.
+.PP
+In use, the user would then be required to ``compile'' all class
+descriptions by running the parser (which therefore would have to be user
+accessible program) before running the Little Smalltalk system.  Little
+Smalltalk could not be used to edit class descriptions on the fly \- the
+user would have to leave the system, perform the edit, and return to the
+system.  This would seriously limit functionality and utility, but that is
+cost of not running UNIX!
+.NH
+Graphics
+.PP
+The nice bit-mapped graphics display of the Smalltalk-80 system is,
+unfortunately, not very portable to conventional machines running
+conventional ascii terminals.  
+Two mutually exclusive approaches have been furnished
+for providing \fBvery\fP rudimentary but
+nevertheless relatively device-independent graphics capabilities.
+.PP
+The first approach used the curses(3) and termlib(3) routines to provide
+simple ascii (character-level) graphics.
+To use these, define
+the symbol CURSES in parser/env.h, and modify the Makefile in /sourses
+adding the libraries -lcurses and -ltermlib (or termcap, whichever is
+appropriate) to the symbol LIB.
+.PP
+The functionality so provided can be described as follows:
+.IP clearScreen 1i
+This message is accepted by the pseudo-variable smalltalk and clears the
+screen.
+.IP printAt: 1i
+This message is accepted by instances of class String.  The argument must
+be a point, representing a line@column pair.  The string is printed at the
+point.
+.PP
+In addition, there is a class \fBForm\fP found in /prelude, which is an
+attempt at providing simple graphics forms.  Instances of \fBForm\fP also
+repond to printAt:.  A sample program plane.st can be found in /tests
+illustrating some of the features of forms.
+Refer to the Makesfiles in /prelude and /tests for more information.
+.PP
+The second approach uses the plot(3) routines.  On some terminals
+(the Tektronix 4014, for example) these routines can be set up to 
+write directly to the terminal screen, rather than going through a
+postprocessing filter.  If such a device is available, the symbol PLOT3
+should be defined in parser/env.h, in addition appropriate loader commands
+(-l4014, for example) should be added to the symbol LIB in
+sources/Makefile.
+.PP
+The functionality so provided is the ability to produce lines, circles and
+arcs.  Various classes (Pen, PenSave and Form) for doing this are provided
+in the /prelude subdirectory, consult the Makefile for details.
+A test program (penshow) is provided in the /tests subdirectory.
+.NH
+Troubleshooting
+.PP
+Here are a few of the problems you might run into, and possible solutions:
+.PP
+The first thing to suspect if you observe strange behavior is the
+fastloading feature.  Try running the system with the \-m flag, which will
+turn off fastloading.  For example, on the 11/70 fastloading will inhibit
+the )i command from working correctly, but no error messages will be
+generated.  The appearance of a message such as ``\fIxxx\fP: is not 
+an identifier'', or of can't happen message number 23
+is also a clue that fastloading does not work and should be disabled.
+Similarly, the appearance of the message ``no such context as:
+\fIxxx\fP/stdsave'' during startup is an indication that the file
+containing the saved binary form of the standard prelude either does not
+exist or is unreadable, or that the path given in parser/env.h is wrong.
+.PP
+The appearence of the message ``xxx: not an identifier'' following a fast
+load or a )l command may be a sign that the environment pointer is being
+trashed.   Try defining the symbol ENVSAVE and recreating the system.
+.PP
+Solutions to problems with fastloading are to try to 
+to recreate the stdsave file in /prelude, or as a last resort to remove the
+definition for FASTDEFAULT from /parser/env.h, ``make clean''
+and recompile everything.
+This latter step will configure a system that will not attempt fastloading
+unless explicitly called for.
+.PP
+If the function _gamma is undefined following load for st.  Solution: remove
+the definition for the symbol GAMMA, ``make clean'' and recompile.
+.PP
+\&``Cant't happen number 1''.  If you are running on a machine with small
+memory, your program creates too many objects and runs out of memory.  If
+you are running on a vax or other large machine - your application is
+creating cycles or many many objects, probably a programming error.
+.PP
+No output appears when you start the program, and if you type control-D all
+the output appears.  Solution: define the symbol FLUSHREQ and recompile.
+.PP
+Can't happen number 22 - either TEMPFILE is unreadable, or
+/prelude/standard does not exist.
+.PP
+Systems that have trouble with long lines may have difficulty with the file
+syms.c in /sources (there is one line in that file over 300 characters long).
+If necessary, this file can (and will be) automatically reconstructed from
+other files in the directory.
+.PP
+Receiving error number 129 whenever any non-primitive class method is
+called may be a symptom of a clash of variable names.  On older systems the
+variables runningProcess and runningInterpreter would clash on systems that
+did not support long variable names.  The variable runningInterpreter (in
+process.c) has since been changed to presentInterpreter, so this problem
+should not occur in software taken from more recent distribution tapes.
+.PP
+129 errors can also be caused by bad preludes.  Try removing all the .p
+files from /prelude and remaking standard.
+(Frequently, if you receive an error when first building the prelude, some
+of the .p files will be incorrect).
+.PP
+Note that /sources and /prelude have make instructions ``make clean'' which
+remove object files and are useful in insuring the files are in a clean
+state before starting a reconstruction of the system.
+.NH
+Further Distribution
+.PP
+The Little Smalltalk system is public domain, and may be distributed
+further as long as proper attribution is given in all published references.
+.PP
+In the interests of keeping the distribution up to date and as error free
+as possible, we wish to keep track of known sites using the
+system.  People interested in being placed on the mailing list for future
+bug announcements and new version announcements should contact Professor
+Budd, at the address listed below.  Changes, modifications, or improvements
+to the code or the standard library can be submitted also, and will be
+considered for inclusion in future distributions.
+.NH
+What to do with BUGS
+.PP
+Observed irregularities in Little Smalltalk behavior during execution
+(hereafter known as ``Bugs'') should be reported to:
+.DS I
+Professor Tim Budd
+Little Smalltalk Distribution
+Department of Computer Science
+Oregon State University
+Corvallis, Oregon 97331 USA
+
+CSNET address:  budd@oregon-state.csnet
+UUCP  address:  budd@orstcs.uucp
+.DE
+.LP
+The report of the bug should indicate whether it is reproducible, and if so
+how it is manifested.  If it is available, a description of the fix for the
+bug should be given, and it will be incorporated into future distributions.
+Periodically, a listing of known bug fixes will be mailed to known sites.
+.PP
+The Little Smalltalk system is distributed without responsibility for the
+performance of the system and without any guarantee of maintenance.

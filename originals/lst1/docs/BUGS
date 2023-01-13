@@ -1,0 +1,26 @@
+KNOWN BUGS
+
+1/1/85 assigning a block to a variable will usually cause memory reference
+	cycles, resulting in the number of increments and decrements not
+	being equal following execution.
+	(not really a bug, caused by the implementation - blocks need to
+	access the context, which includes the local variables, which
+	includes the block, which needs to access the context ... )
+
+1/1/85	The stack size allocated by the parser is fixed.  It should be
+	computed by the parser and varied for different methods.
+
+1/1/85  system should be modified to allow execution on system with no
+	``system()'' system call (whew!).  This would involve using two
+	programs - a parser to take class descriptions and turn them into
+	internal form, and the smalltalk system.  Should be easy to do,
+	however.
+
+2/1/85	fast loading does not work on the HP9000
+
+4/1/85	if you modify the class Smalltalk (and thereby the pseudo variable
+	smalltalk) the pseudo variable does not get properly initialized.
+
+4/1/85	Because of bootstrapping peculiarities, a few classes (such as
+	Object or Symbol or String) do not respond to the message ``variables''
+	correctly.

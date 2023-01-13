@@ -1,0 +1,29 @@
+Little Smalltalk
+	Philosopher 1 is thinking.
+Philosopher 2 is thinking.
+Philosopher 3 is thinking.
+Philosopher 4 is thinking.
+Philosopher 1 is eating.
+Philosopher 5 is thinking.
+Philosopher 3 is eating.
+Philosopher 5 is eating.
+Philosopher 2 is eating.
+Philosopher 4 is eating.
+Philosopher 1 is thinking.
+Philosopher 2 is thinking.
+Philosopher 3 is thinking.
+Philosopher 4 is thinking.
+Philosopher 1 is eating.
+Philosopher 5 is thinking.
+Philosopher 3 is eating.
+Philosopher 5 is eating.
+Philosopher 2 is eating.
+Philosopher 4 is eating.
+Philosopher 1 is sleeping.
+Philosopher 2 is sleeping.
+Philosopher 3 is sleeping.
+Philosopher 4 is sleeping.
+Philosopher 5 is sleeping.
+Main
+	
+

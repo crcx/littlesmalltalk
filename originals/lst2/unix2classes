@@ -1,0 +1,66 @@
+*
+* Little Smalltalk, version 2
+* Written by Tim Budd, Oregon State University, July 1987
+*
+* unix specific routines for the multiprocess front end
+*
+*	(override previous declaration, adding new instance variable)
+Declare Smalltalk Object errorRecoveryBlock
+*	(better override instance as well )
+Instance Smalltalk smalltalk
+*
+Class Class
+	addMethod
+		self doEdit: ''
+|
+	editMethod: name		| theMethod |
+		theMethod <- methods at: name
+				ifAbsent: [ 'no such method ' print. ^ nil ].
+		self doEdit: theMethod text
+|
+	doEdit: startingText		| theMethod |
+		theMethod <- Method new;
+			text: startingText edit.
+		(theMethod compileWithClass: self)
+			ifTrue: [ methods at: theMethod name put: theMethod .
+				  smalltalk flushMessageCache ]
+]
+Class Smalltalk
+	error: aString
+		('Error: ' ,  aString) print.
+		errorRecoveryBlock value
+|
+	getString
+		^ <1>
+|
+	init		| string |
+		scheduler new.
+		[ '>	' printNoReturn. 
+			string <- smalltalk getString. string notNil ]
+			whileTrue: [ (string size > 0)
+					ifTrue: [ smalltalk doIt: string ] ]
+|
+	doIt: aString		| method |
+		errorRecoveryBlock <- [ ^ nil ].
+		method <- Method new.
+		method text: ( 'proceed ', aString ).
+		(method compileWithClass: Smalltalk)
+			ifTrue: [ method executeWith: #( 1 ). 
+				  scheduler run ]
+|
+	saveImage		| name |
+		'type image name: ' printNoReturn.
+		name <- self getString.
+		self saveImage: name.
+		('image ', name, ' created') print
+]
+Class String
+	edit
+		^ <89 self>
+|
+	print
+		^ <88 self>
+|
+	printNoReturn
+		^ <86 self>
+]

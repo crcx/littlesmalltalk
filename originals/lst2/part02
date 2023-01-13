@@ -1,0 +1,2507 @@
+Subject:  v11i087:  Little Smalltalk interpreter, Part002/03
+Newsgroups: comp.sources.unix
+Sender: sources
+Approved: rs@uunet.UU.NET
+
+Submitted-by: Tim Budd <budd@cs.orst.edu>
+Posting-number: Volume 11, Issue 87
+Archive-name: little-st/part02
+
+The following is version two of the Little Smalltalk system, distributed
+in three parts.  Little Smalltalk is an interpreter for the language
+Smalltalk.
+
+Questions or comments should be sent to Tim Budd,
+	budd@oregon-state.csnet
+	budd@cs.orst.edu	(128.193.32.1)
+	{tektronix, hp-pcd}!orstcs!budd
+
+-----------cut here--------------------------------------------
+: To unbundle, sh this file
+echo unbundling memory.c 1>&2
+cat >memory.c <<'End'
+/*
+	Little Smalltalk, version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	memory management module
+
+	This is a rather simple, straightforward, reference counting scheme.
+	There are no provisions for detecting cycles, nor any attempt made
+	at compaction.  Free lists of various sizes are maintained.
+	At present only objects up to 255 bytes can be allocated, 
+	which mostly only limits the size of method (in text) you can create.
+
+	About the only tricky feature to this code is the fact that
+	reference counts are not stored as part of an object image, but
+	are instead recreated when the object is read back in.
+	(This will, in fact, eliminate cycles, as well as other unreachable
+	objects).
+
+	This can, and should, be replaced by a better memory management
+	algorithm.
+*/
+# include <stdio.h>
+# include "env.h"
+# include "memory.h"
+
+# define ObjectTableMax 5000
+# define MemoryBlockSize 1000
+
+boolean debugging = false;
+object sysobj;	/* temporary used to avoid rereference in macros */
+object intobj;
+
+object symbols;		/* table of all symbols created */
+object globalNames;	/* table of all accessible global names */
+
+/*
+	in theory the objectTable should only be accessible to the memory
+	manager.  Indeed, given the right macro definitions, this can be
+	made so.  Never the less, for efficiency sake some of the macros
+	can also be defined to access the object table directly
+*/
+
+struct objectStruct objectTable[ObjectTableMax];
+
+/*
+	The following global variables are strictly local to the memory
+	manager module
+*/
+
+static object objectFreeList[256];	/* free list of objects */
+static short objectTop;			/* last object allocated */
+static object *memoryBlock;		/* malloc'ed chunck of memory */
+static int    currentMemoryPosition;	/* last used position in above */
+
+
+/* initialize the memory management module */
+initMemoryManager() {
+	int i;
+
+	/* set all the free list pointers to zero */
+	for (i = 0; i < 256; i++)
+		objectFreeList[i] = nilobj;
+
+	/* set all the reference counts to zero */
+	for (i = 0; i < ObjectTableMax; i++)
+		objectTable[i].referenceCount = 0;
+
+	objectTop = 0;
+
+	/* force an allocation on first object assignment */
+	currentMemoryPosition = MemoryBlockSize + 1;
+
+	/* object at location 0 is the nil object, so give it nonzero ref */
+	objectTable[0].referenceCount = 1;
+	objectTable[0].size = 0;
+	objectTable[0].type = objectMemory;
+}
+
+/* report a (generally fatal) memory manager error */
+sysError(s1, s2)
+char *s1, *s2;
+{	int i;
+	fprintf(stderr,"%s\n%s\n", s1, s2);
+	i = 0;
+	i = 32 / i;
+}
+
+/*
+  mBlockAlloc - rip out a block (array) of object of the given size from
+	the current malloc block 
+*/
+static object *mBlockAlloc(memorySize)
+int memorySize;
+{	object *objptr;
+
+	if (currentMemoryPosition + memorySize >= MemoryBlockSize) {
+		memoryBlock = (object *) calloc(MemoryBlockSize, sizeof(object));
+		if (! memoryBlock)
+			sysError("out of memory","malloc failed");
+		currentMemoryPosition = 0;
+		}
+	objptr = (object *) &memoryBlock[currentMemoryPosition];
+	currentMemoryPosition += memorySize;
+	return(objptr);
+}
+
+/* allocate a new memory object */
+object alcObject(memorySize, memoryType)
+int memorySize;
+int memoryType;
+{	int position, trip;
+
+	if (memorySize >= 256) {
+		sysError("allocation bigger than 256","");
+		}
+
+	if (objectFreeList[memorySize] != 0) {
+		objectFreeList[memorySize] = 
+			objectTable[ position = objectFreeList[memorySize]].class;
+		}
+	else {		/* not found, must allocate a new object */
+		position = trip = 0;
+		do { 
+			objectTop = objectTop + 1;
+			if (objectTop >= ObjectTableMax)
+				if (trip) {
+					sysError("out of objects ","  ");
+					position = 1;
+					}
+				else {
+					trip = objectTop =1;
+					}
+			else if (objectTable[objectTop].referenceCount <= 0)
+				position = objectTop;
+		} while (position == 0);
+
+		/* allocate memory pointer */
+		objectTable[position].size = memorySize;
+		objectTable[position].memory = mBlockAlloc(memorySize);
+
+		}
+
+	/* set class and type */
+	objectTable[position].referenceCount = 0;
+	objectTable[position].class = nilobj;
+	objectTable[position].type = memoryType;
+	return(position << 1);
+}
+
+object allocSymbol(str)
+char *str;
+{	object newSym;
+
+	newSym = alcObject((2 + strlen(str))/2, charMemory);
+	ignore strcpy(charPtr(newSym), str);
+	return(newSym);
+}
+
+# ifdef incr
+object incrobj;		/* buffer for increment macro */
+# endif
+# ifndef incr
+void incr(z)
+object z;
+{
+	if (z && ! isInteger(z)) {
+		objectTable[z>>1].referenceCount++;
+		globalinccount++;
+		}
+}
+# endif
+
+# ifndef decr
+void decr(z)
+object z;
+{
+	if (z && ! isInteger(z)) {
+		if (--objectTable[z>>1].referenceCount <= 0) {
+			sysDecr(z);
+			}
+		globaldeccount++;
+		}
+}
+# endif
+
+/* do the real work in the decr procedure */
+sysDecr(z)
+object z;
+{	register struct objectStruct *p;
+	register int i;
+
+	p = &objectTable[z>>1];
+	if (p->referenceCount < 0) {
+		sysError("negative reference count","");
+		}
+	decr(p->class);
+	p->class = objectFreeList[p->size];
+	objectFreeList[p->size] = z>>1;
+	if (((int) p->size) > 0) {
+		if (p->type == objectMemory)
+			for (i = p->size; i > 0 ; )
+				decr(p->memory[--i]);
+		for (i = p->size; i > 0; )
+			p->memory[--i] = nilobj;
+		}
+
+}
+
+# ifndef basicAt
+object basicAt(z, i)
+object z;
+register int i;
+{
+	if (isInteger(z))
+		sysError("attempt to index","into integer");
+	else if ((i <= 0) || (i > objectSize(z))) {
+		fprintf(stderr,"index %d size %d\n", i, (int) objectSize(z));
+		sysError("index out of range","in basicAt");
+		}
+	else
+		return(sysMemPtr(z)[i-1]);
+	return(0);
+}
+# endif
+
+void basicAtPut(z, i, v)
+object z, v;
+register int i;
+{
+	if (isInteger(z))
+		sysError("assigning index to","integer value");
+	else if ((i <= 0) || (i > objectSize(z))) {
+		fprintf(stderr,"index %d size %d\n", i, (int) objectSize(z));
+		sysError("index out of range","in basicAtPut");
+		}
+	else {
+		incr(v);
+		decr(sysMemPtr(z)[i-1]);
+		sysMemPtr(z)[i-1] = v;
+		}
+}
+
+/*
+	imageWrite - write out an object image
+*/
+static iwerr() { sysError("imageWrite count error",""); }
+
+imageWrite(fp)
+FILE *fp;
+{	short i;
+
+	if (fwrite(&symbols, sizeof(object), 1, fp) != 1) iwerr();
+	if (fwrite(&globalNames, sizeof(object), 1, fp) != 1) iwerr();
+
+	for (i = 0; i < ObjectTableMax; i++) {
+		if (objectTable[i].referenceCount > 0) {
+			if (fwrite(&i, sizeof(short), 1, fp) != 1) iwerr();
+			if (fwrite(&objectTable[i].class, sizeof(object), 1, fp)
+				!= 1) iwerr();
+			if (fwrite(&objectTable[i].size, sizeof(byte), 1, fp)
+				!= 1) iwerr();
+			if (fwrite(&objectTable[i].type, sizeof(byte), 1, fp)
+				!= 1) iwerr();
+			if (objectTable[i].size != 0)
+				if (fwrite(objectTable[i].memory, sizeof(object),
+					objectTable[i].size, fp) != objectTable[i].size)
+						iwerr();
+			}
+		}
+}
+
+/*
+	imageRead - read in an object image
+*/
+static irerr() { sysError("imageWrite count error",""); }
+
+/*
+	the following two routines, addmittedly a bit complicated,
+assure that objects read in are really referenced, eliminating junk
+that may be in the object file but not referenced */
+
+static membump(i, j)
+int i, j;
+{	int k;
+	object *p;
+
+	k = objectTable[j].class;
+	if (k) memincr(i, k>>1);
+	if (objectTable[j].type == objectMemory) {
+		p = objectTable[j].memory;
+		for (k = byteToInt(objectTable[j].size) - 1; k >= 0; k--)
+			if (p[k] && ! isInteger(p[k]))
+				memincr(i, p[k]>>1);
+		}
+}
+
+static memincr(i, j)
+int i, j;
+{
+	objectTable[j].referenceCount++;
+	if ((j <= i) && (objectTable[j].referenceCount == 1))
+		membump(i, j);
+}
+
+imageRead(fp)
+FILE *fp;
+{	short i;
+	object *p;
+
+	if (fread( &symbols, sizeof(object), 1, fp) != 1) irerr();
+	if (fread( &globalNames, sizeof(object), 1, fp) != 1) irerr();
+	objectTable[symbols>>1].referenceCount++;
+	objectTable[globalNames>>1].referenceCount++;
+
+	while(fread( &i, sizeof(short), 1, fp) == 1) {
+		if (fread( &objectTable[i].class, sizeof(object), 1, fp)
+				!= 1) irerr();
+
+		if (fread( &objectTable[i].size, sizeof(byte), 1, fp)
+				!= 1) irerr();
+		if (fread( &objectTable[i].type, sizeof(byte), 1, fp)
+				!= 1) irerr();
+		if (objectTable[i].size != 0) {
+			p = objectTable[i].memory = mBlockAlloc((int) objectTable[i].size);
+			if (fread( p, sizeof(object),
+				 byteToInt(objectTable[i].size), fp) != byteToInt(objectTable[i].size))
+						irerr();
+			if (objectTable[i].referenceCount > 0)
+				membump(i, i);
+			}
+		else
+			objectTable[i].memory = (object *) 0;
+		}
+}
+
+static ncopy(p, q, n)
+char *p, *q;
+int n;
+{
+
+	while (n>0) {
+		*p++ = *q++; 
+		n--;
+		}
+}
+
+object allocFloat(d)
+double d;
+{	object newObj;
+
+	newObj = alcObject((int) sizeof (double), floatMemory);
+	ncopy(charPtr(newObj), (char *) &d, (int) sizeof (double));
+	return(newObj);
+}
+
+double floatValue(obj)
+object obj;
+{	double d;
+
+	ncopy((char *) &d, charPtr(obj), (int) sizeof (double));
+	return(d);
+}
+
+int objcount() 
+{	int i, count;
+
+	
+	for (count = i = 0; i < ObjectTableMax; i++)
+		if (objectTable[i].referenceCount > 0)
+			count++;
+	return(count);
+}
+End
+echo unbundling names.c 1>&2
+cat >names.c <<'End'
+/*
+	Little Smalltalk, version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	Name Table module
+
+	A name table is the term used for a Dictionary indexed by symbols.
+	There are two name tables used internally by the bytecode interpreter.
+	The first is the table, contained in the variable globalNames,
+	that contains the names and values of all globally accessible 
+	identifiers.  The second is the table of methods associated with
+	every class.  Notice that in neither of these cases does the
+	system ever put anything INTO the tables, thus there are only
+	routines here for reading FROM tables.
+
+	(putting things INTO the table is all done in Smalltalk code,
+	using the methods from class Dictionary)
+
+	One complication of instances of class Symbol is that all
+	symbols must be unique, not only so that == will work as expected,
+	but so that memory does not get overly clogged up with symbols.
+	Thus all symbols are kept in a hash table, and when new symbols
+	are created (via newSymbol(), below) they are inserted into this
+	table, if not already there.
+
+	This module also manages the definition of various symbols that are
+	given fixed values for efficiency sake.  These include the objects
+	nil, true, false, and various classes.
+*/
+
+# include <stdio.h>
+# include "env.h"
+# include "memory.h"
+# include "names.h"
+
+/* global variables used to avoid repeated examinations of the global symbol table */
+object trueobj = nilobj;	/* the pseudo variable true */
+object falseobj = nilobj;	/* the pseudo variable false */
+object smallobj = nilobj;	/* the pseudo variable smalltalk */
+object arrayclass = nilobj;	/* the class ``Array'' */
+object blockclass = nilobj;	/* the class ``Block'' */
+object contextclass = nilobj;	/* the class ``Context'' */
+object intclass = nilobj;	/* the class ``Integer'' */
+object intrclass = nilobj;	/* the class ``Interpreter'' */
+object symbolclass = nilobj;	/* the class ``Symbol'' */
+object stringclass = nilobj;	/* the class ``String'' */
+
+/*
+	some messages are encoded in concise bytecode format -
+to reduce the size of the compiled methods
+(also, in some cases, to more efficiently detect special cases
+handled in the interpreter, rather than by methods)
+*/
+
+char *binStrs[] = {"+", "-", "<", ">", "<=", ">=", "=", "~=", "*", 
+"quo:", "rem:", "bitAnd:", "bitXor:", 
+"==", ",", "at:", "basicAt:", "do:", "coerce:", "error:", "includesKey:",
+"isMemberOf:", "new:", "to:", "value:", "whileTrue:", "addFirst:", "addLast:",
+0};
+
+object binSyms[28];
+
+char *unStrs[] = {"isNil", "notNil", "new", "value", "class", "size",
+"basicSize", "print", "printString", 0};
+
+object unSyms[9];
+
+char *keyStrs[] = {"at:ifAbsent:", "at:put:", "basicAt:put:", "between:and:",
+0};
+
+object keySyms[4];
+
+object nameTableLookup(table, symbol)
+object table, symbol;
+{	int hash, tablesize;
+	object link;
+
+	if ((tablesize = objectSize(table)) == 0)
+		sysError("system error","lookup on null table");
+	else {
+		hash = 3 * ( symbol % (tablesize / 3));
+		if (basicAt(table, hash+1) == symbol)
+			return(basicAt(table, hash+2));
+
+		/* otherwise look along the chain of links */
+		for (link=basicAt(table, hash+3); link != nilobj; 
+					link=basicAt(link, 3))
+			if (basicAt(link, 1) == symbol)
+				return(basicAt(link, 2));
+
+	}
+	return (nilobj);
+}
+
+getClass(obj)
+object obj;
+{
+	if (isInteger(obj))
+		return(intclass);
+	return (classField(obj));
+}
+
+static object globalGet(name)
+char *name;
+{	object newobj;
+
+	newobj = globalSymbol(name);
+	if (newobj == nilobj)
+		sysError("symbol not found in image", name);
+	return(newobj);
+}
+
+initCommonSymbols()
+{	int i;
+
+	trueobj = globalGet("true");
+	falseobj = globalGet("false");
+	smallobj  = globalGet("smalltalk");
+	arrayclass = globalGet("Array");
+	blockclass = globalGet("Block");
+	contextclass = globalGet("Context");
+	intclass = globalGet("Integer");
+	symbolclass = globalGet("Symbol");
+	stringclass = globalGet("String");
+	/* interpreter may or may not be there */
+	intrclass = globalSymbol("Interpreter");
+
+	for (i = 0; i < 28; i++)
+		binSyms[i] = newSymbol(binStrs[i]);
+
+	for (i = 0; i < 9; i++)
+		unSyms[i] = newSymbol(unStrs[i]);
+
+	for (i = 0; i < 4; i++)
+		keySyms[i] = newSymbol(keyStrs[i]);
+}
+
+object newArray(size)
+int size;
+{	object newobj;
+
+	newobj = allocObject(size);
+	setClass(newobj, arrayclass);
+	return(newobj);
+}
+
+object newSymbol(str)
+char *str;
+{	int hash;
+	object newSym, link;
+	char *p;
+
+	/* first compute hash value of string text */
+	/* this is duplicated in image.c - make sure any changes match there */
+	hash = 0;
+	for (p = str; *p; p++)
+		hash += *p;
+	if (hash < 0) hash = - hash;
+	hash = 2 * ( hash % (objectSize(symbols) / 2));
+
+	/* next look to see if it is in symbols - note that this
+	   text duplicates that found in nameTableLookup, only using
+	   string comparison instead of symbol comparison */
+	newSym = basicAt(symbols, hash+1);
+	if (streq(str, charPtr(newSym)))
+		return(newSym);
+
+	/* not in table, look along links */
+	for (link=basicAt(symbols, hash+2); link != nilobj; link=basicAt(link,2)) {
+		newSym = basicAt(link, 1);
+		if (streq(str, charPtr(newSym)))
+			return(newSym);
+		}
+
+	/* not found, make a new symbol */
+	newSym = allocSymbol(str);
+	setClass(newSym, symbolclass);
+
+	/* now insert new symbol in table, so next time we will find it */
+	if (basicAt(symbols, hash+1) == nilobj)
+		basicAtPut(symbols, hash+1, newSym);
+	else {		/* insert along links */
+		link = allocObject(2);
+		basicAtPut(link, 1, newSym);
+		basicAtPut(link, 2, basicAt(symbols, hash+2));
+		basicAtPut(symbols, hash+2, link);
+		}
+
+	return(newSym);
+}
+
+object newStString(value)
+char *value;
+{	object newobj;
+
+	newobj = allocSymbol(value);
+	setClass(newobj, stringclass);
+	return(newobj);
+}
+
+object newFloat(d)
+double d;
+{	object newobj;
+
+	newobj = allocFloat(d);
+	setClass(newobj, globalSymbol("Float"));
+	return(newobj);
+}
+End
+echo unbundling lex.c 1>&2
+cat >lex.c <<'End'
+/*
+	Little Smalltalk, version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	lexical analysis routines for method parser
+	should be called only by parser 
+*/
+
+# include <stdio.h>
+# include <ctype.h>
+# include "env.h"
+# include "memory.h"
+# include "lex.h"
+
+extern double atof();
+
+/* global variables returned by lexical analyser */
+
+tokentype token;		/* token variety */
+char tokenString[80];		/* text of current token */
+int tokenInteger;		/* integer (or character) value of token */
+double tokenFloat;		/* floating point value of token */
+
+/* local variables used only by lexical analyser */
+
+static char *cp;		/* character pointer */
+static char pushBuffer[10];	/* pushed back buffer */
+static int  pushindex;		/* index of last pushed back char */
+static char cc;			/* current character */
+
+/* lexinit - initialize the lexical analysis routines */
+lexinit(str)
+char *str;
+{
+	pushindex = 0;
+	cp = str;
+	/* get first token */
+	nextToken();
+}
+
+/* pushBack - push one character back into the input */
+static pushBack(c)
+char c;
+{
+	pushBuffer[pushindex++] = c;
+}
+
+/* nextChar - retrieve the next char, from buffer or input */
+static char nextChar()
+{
+	if (pushindex > 0) cc = pushBuffer[--pushindex];
+	else cc = *cp++;
+	return(cc);
+}
+
+/* isClosing - characters which can close an expression */
+static boolean isClosing(c)
+char c;
+{
+	switch(c) {
+		case '.': case ']': case ')': case ';':
+			return(true);
+	}
+	return(false);
+}
+
+/* singleBinary - binary characters that cannot be continued */
+static boolean singleBinary(c)
+char c;
+{
+	switch(c) {
+		case '[': case '(': case ')': case ']':
+			return(true);
+	}
+	return(false);
+}
+
+/* binarySecond - return true if char can be second char in binary symbol */
+static boolean binarySecond(c)
+char c;
+{
+	if (isalpha(c) || isdigit(c) || isspace(c) || isClosing(c) ||
+		singleBinary(c))
+		return(false);
+	return(true);
+}
+
+tokentype nextToken()
+{	char *tp;
+	boolean sign;
+
+	/* skip over blanks and comments */
+	while(nextChar() && (isspace(cc) || (cc == '"')))
+		if (cc == '"') {
+			/* read comment */
+			while (nextChar() && (cc != '"')) ;
+			if (! cc) break;	/* break if we run into eof */
+			}
+
+	tp = tokenString;
+	*tp++ = cc;
+
+	if (! cc)			/* end of input */
+		token = inputend;
+	
+	else if (isalpha(cc)) {		/* identifier */
+		while (nextChar() && isalnum(cc))
+			*tp++ = cc;
+		if (cc == ':') {
+			*tp++ = cc;
+			token = namecolon;
+			}
+		else {
+			pushBack(cc);
+			token = name;
+			}
+		}
+
+	else if (isdigit(cc)) {		/* number */
+		tokenInteger = cc - '0';
+		while (nextChar() && isdigit(cc)) {
+			*tp++ = cc;
+			tokenInteger = (tokenInteger * 10) + (cc - '0');
+			}
+		token = intconst;
+		if (cc == '.') {	/* possible float */
+			if (nextChar() && isdigit(cc)) {
+				*tp++ = '.';
+				do
+					*tp++ = cc;
+				while (nextChar() && isdigit(cc));
+				if (cc) pushBack(cc);
+				token = floatconst;
+				*tp = '\0';
+				tokenFloat = atof(tokenString);
+				}
+			else {
+				/* nope, just an ordinary period */
+				if (cc) pushBack(cc);
+				pushBack('.');
+				}
+			}
+		else
+			pushBack(cc);
+
+		if (nextChar() && cc == 'e') {	/* possible float */
+			if (nextChar() && cc == '-') {
+				sign = true;
+				nextChar();
+				}
+			else
+				sign = false;
+			if (cc && isdigit(cc)) { /* yep, its a float */
+				*tp++ = 'e';
+				if (sign) *tp++ = '-';
+				while (cc && isdigit(cc)) {
+					*tp++ = cc;
+					nextChar();
+					}
+				if (cc) pushBack(cc);
+				*tp = '\0';
+				token = floatconst;
+				tokenFloat = atof(tokenString);
+				}
+			else {	/* nope, wrong again */
+				if (cc) pushBack(cc);
+				if (sign) pushBack('-');
+				pushBack('e');
+				}
+			}
+			else
+				if (cc) pushBack(cc);
+		}
+
+	else if (cc == '$') {		/* character constant */
+		tokenInteger = (int) nextChar();
+		token = charconst;
+		}
+
+	else if (cc == '#') {		/* symbol */
+		tp--;	/* erase pound sign */
+		if (nextChar() == '(')
+			token = arraybegin;
+		else {
+			pushBack(cc);
+			while (nextChar() && (isalnum(cc) || (cc == ':')))
+				*tp++ = cc;
+			pushBack(cc);
+			token = symconst;
+			}
+		}
+
+	else if (cc == '\'') {		/* string constant */
+		tp--;	/* erase pound sign */
+		while (nextChar() && (cc != '\''))
+			*tp++ = cc;
+		if (!cc) pushBack(cc);	/* push back an eof */
+		token = strconst;
+		}
+
+	else if (isClosing(cc))		/* closing expressions */
+		token = closing;
+
+	else if (singleBinary(cc))	/* single binary expressions */
+		token = binary;
+
+	else {				/* anything else is binary */
+		if (nextChar() && binarySecond(cc))
+			*tp++ = cc;
+		else
+			pushBack(cc);
+		token = binary;
+		}
+
+	*tp = '\0';
+	return(token);
+}
+End
+echo unbundling parser.c 1>&2
+cat >parser.c <<'End'
+/*
+	Little Smalltalk, version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	Method parser - parses the textual description of a method,
+	generating bytecodes and literals.
+
+	This parser is based around a simple minded recursive descent
+	parser.
+	It is used both by the module that builds the initial virtual image,
+	and by a primitive when invoked from a running Smalltalk system.
+
+	The latter case could, if the bytecode interpreter were fast enough,
+	be replaced by a parser written in Smalltalk.  This would be preferable,
+	but not if it slowed down the system too terribly.
+
+	To use the parser the routine setInstanceVariables must first be
+	called with a class object.  This places the appropriate instance
+	variables into the memory buffers, so that references to them
+	can be correctly encoded.
+
+	As this is recursive descent, you should read it SDRAWKCAB !
+		(from bottom to top)
+*/
+# include <stdio.h>
+# include "env.h"
+# include "memory.h"
+# include "names.h"
+# include "interp.h"
+# include "lex.h"
+
+		/* all of the following limits could be increased (up to
+			256) without any trouble.  They are kept low 
+			to keep memory utilization down */
+
+# define codeLimit 256		/* maximum number of bytecodes permitted */
+# define literalLimit 32	/* maximum number of literals permitted */
+# define temporaryLimit 16	/* maximum number of temporaries permitted */
+# define argumentLimit 16	/* maximum number of arguments permitted */
+# define instanceLimit 16	/* maximum number of instance vars permitted */
+# define methodLimit 32		/* maximum number of methods permitted */
+
+extern object binSyms[];
+extern object keySyms[];
+extern char *unStrs[], *binStrs[], *keyStrs[];
+
+static boolean parseok;			/* parse still ok? */
+static int codeTop;			/* top position filled in code array */
+static byte codeArray[codeLimit];	/* bytecode array */
+static int literalTop;			/*  ... etc. */
+static object literalArray[literalLimit];
+static int temporaryTop;
+static char *temporaryName[temporaryLimit];
+static int argumentTop;
+static char *argumentName[argumentLimit];
+static int instanceTop;
+static char *instanceName[instanceLimit];
+
+static int maxTemporary;		/* highest temporary see so far */
+static char selector[80];		/* message selector */
+
+static boolean inBlock;			/* true if compiling a block */
+static boolean optimizedBlock;		/* true if compiling optimized block */
+
+setInstanceVariables(aClass)
+object aClass;
+{	int i, limit;
+	object vars;
+
+	if (aClass == nilobj)
+		instanceTop = 0;
+	else {
+		setInstanceVariables(basicAt(aClass, superClassInClass));
+		vars = basicAt(aClass, variablesInClass);
+		if (vars != nilobj) {
+			limit = objectSize(vars);
+			for (i = 1; i <= limit; i++)
+				instanceName[++instanceTop] = charPtr(basicAt(vars, i));
+			}
+		}
+}
+
+compilError(str1, str2)
+char *str1, *str2;
+{
+	fprintf(stderr,"compiler error: %s %s\n", str1, str2);
+	parseok = false;
+}
+
+static object newChar(value)
+int value;
+{	object newobj;
+
+	newobj = allocObject(1);
+	basicAtPut(newobj, 1, newInteger(value));
+	setClass(newobj, globalSymbol("Char"));
+	return(newobj);
+}
+
+static object newByteArray(size)
+int size;
+{	object newobj;
+
+	newobj = allocByte(size);
+	setClass(newobj, globalSymbol("ByteArray"));
+	return(newobj);
+}
+
+static genCode(value)
+int value;
+{
+	if (codeTop >= codeLimit)
+		compilError("too many bytecode instructions in method","");
+	else
+		codeArray[codeTop++] = value;
+}
+
+static genInstruction(high, low)
+int high, low;
+{
+	if (low >= 16) {
+		genInstruction(0, high);
+		genCode(low);
+		}
+	else
+		genCode(high * 16 + low);
+}
+
+static int genLiteral(aLiteral)
+object aLiteral;
+{
+	if (literalTop >= literalLimit)
+		compilError("too many literals in method","");
+	else
+		literalArray[++literalTop] = aLiteral;
+	return(literalTop - 1);
+}
+
+static char *glbsyms[] = {"nil", "true", "false", "smalltalk", 0 };
+
+static boolean nameTerm(name)
+char *name;
+{	int i;
+	boolean done = false;
+	boolean isSuper = false;
+
+	/* it might be self or super */
+	if (streq(name, "self") || streq(name, "super")) {
+		genInstruction(PushArgument, 0);
+		done = true;
+		if (streq(name,"super")) isSuper = true;
+		}
+
+	/* or it might be a temporary */
+	if (! done)
+		for (i = 1; (! done) && ( i <= temporaryTop ) ; i++)
+			if (streq(name, temporaryName[i])) {
+				genInstruction(PushTemporary, i-1);
+				done = true;
+				}
+
+	/* or it might be an argument */
+	if (! done)
+		for (i = 1; (! done) && (i <= argumentTop ) ; i++)
+			if (streq(name, argumentName[i])) {
+				genInstruction(PushArgument, i);
+				done = true;
+				}
+
+	/* or it might be an instance variable */
+	if (! done)
+		for (i = 1; (! done) && (i <= instanceTop); i++) {
+			if (streq(name, instanceName[i])) {
+				genInstruction(PushInstance, i-1);
+				done = true;
+				}
+			}
+
+	/* or it might be a global constant */
+	if (! done)
+		for (i = 0; (! done) && glbsyms[i]; i++)
+			if (streq(name, glbsyms[i])) {
+				genInstruction(PushConstant, i+4);
+				done = true;
+				}
+
+	/* not anything else, it must be a global */
+	if (! done) {
+		genInstruction(PushGlobal, genLiteral(newSymbol(name)));
+		}
+
+	return(isSuper);
+}
+
+static int parseArray()
+{	int i, size, base;
+	object newLit, obj;
+
+	base = literalTop;
+	ignore nextToken();
+	while (parseok && (token != closing)) {
+		switch(token) {
+			case arraybegin:
+				ignore parseArray();
+				break;
+
+			case intconst:
+				ignore genLiteral(newInteger(tokenInteger));
+				ignore nextToken();
+				break;
+
+			case floatconst:
+				ignore genLiteral(newFloat(tokenFloat));
+				ignore nextToken();
+				break;
+
+			case name: case namecolon: case symconst:
+				ignore genLiteral(newSymbol(tokenString));
+				ignore nextToken();
+				break;
+
+			case binary:
+				if (streq(tokenString, "(")) {
+					ignore parseArray();
+					}
+				else {
+					ignore genLiteral(newSymbol(tokenString));
+					ignore nextToken();
+					}
+				break;
+
+			case charconst:
+				ignore genLiteral(newChar(
+					newInteger(tokenInteger)));
+				ignore nextToken();
+				break;
+
+			case strconst:
+				ignore genLiteral(newStString(tokenString));
+				ignore nextToken();
+				break;
+
+			default:
+				compilError("illegal text in literal array",
+					tokenString);
+				ignore nextToken();
+				break;
+		}
+	}
+
+	if (parseok)
+		if (! streq(tokenString, ")"))
+			compilError("array not terminated by right parenthesis",
+				tokenString);
+		else
+			ignore nextToken();
+	size = literalTop - base;
+	newLit = newArray(size);
+	for (i = size; i >= 1; i--) {
+		obj = literalArray[literalTop];
+		basicAtPut(newLit, i, obj);
+		decr(obj);
+		literalArray[literalTop] = nilobj;
+		literalTop = literalTop - 1;
+		}
+	return(genLiteral(newLit));
+}
+
+static boolean term()
+{	boolean superTerm = false;	/* true if term is pseudo var super */
+
+	if (token == name) {
+		superTerm = nameTerm(tokenString);
+		ignore nextToken();
+		}
+	else if (token == intconst) {
+		if ((tokenInteger >= 0) && (tokenInteger <= 2))
+			genInstruction(PushConstant, tokenInteger);
+		else
+			genInstruction(PushLiteral, 
+				genLiteral(newInteger(tokenInteger)));
+		ignore nextToken();
+		}
+	else if (token == floatconst) {
+		genInstruction(PushLiteral, genLiteral(newFloat(tokenFloat)));
+		ignore nextToken();
+		}
+	else if ((token == binary) && streq(tokenString, "-")) {
+		if (nextToken() != intconst)
+			compilError("negation not followed",
+				"by integer");
+
+		if (tokenInteger == 1)
+			genInstruction(PushConstant, 3);
+		else
+			genInstruction(PushLiteral, 
+				genLiteral(newInteger( - tokenInteger)));
+		ignore nextToken();
+		}
+	else if (token == charconst) {
+		genInstruction(PushLiteral,
+			genLiteral(newChar(tokenInteger)));
+		ignore nextToken();
+		}
+	else if (token == symconst) {
+		genInstruction(PushLiteral,
+			genLiteral(newSymbol(tokenString)));
+		ignore nextToken();
+		}
+	else if (token == strconst) {
+		genInstruction(PushLiteral,
+			genLiteral(newStString(tokenString)));
+		ignore nextToken();
+		}
+	else if (token == arraybegin) {
+		genInstruction(PushLiteral, parseArray());
+		}
+	else if ((token == binary) && streq(tokenString, "(")) {
+		ignore nextToken();
+		expression();
+		if (parseok)
+			if ((token != closing) || ! streq(tokenString, ")"))
+				compilError("Missing Right Parenthesis","");
+			else
+				ignore nextToken();
+		}
+	else if ((token == binary) && streq(tokenString, "<"))
+		parsePrimitive();
+	else if ((token == binary) && streq(tokenString, "["))
+		block();
+	else
+		compilError("invalid expression start", tokenString);
+
+	return(superTerm);
+}
+
+static parsePrimitive()
+{	int primitiveNumber, argumentCount;
+
+	if (nextToken() != intconst)
+		compilError("primitive number missing","");
+	primitiveNumber = tokenInteger;
+	ignore nextToken();
+	argumentCount = 0;
+	while (parseok && ! ((token == binary) && streq(tokenString, ">"))) {
+		(void) term();
+		argumentCount++;
+		}
+	genInstruction(DoPrimitive, argumentCount);
+	genCode(primitiveNumber);
+	ignore nextToken();
+}
+
+static genMessage(toSuper, argumentCount, messagesym)
+boolean toSuper;
+int argumentCount;
+object messagesym;
+{
+	if (toSuper) {
+		genInstruction(DoSpecial, SendToSuper);
+		genCode(argumentCount);
+		}
+	else
+		genInstruction(SendMessage, argumentCount);
+	genCode(genLiteral(messagesym));
+}
+
+static boolean unaryContinuation(superReceiver)
+boolean superReceiver;
+{	int i;
+	boolean sent;
+	object messagesym;
+
+	while (parseok && (token == name)) {
+		sent = false;
+		messagesym = newSymbol(tokenString);
+		/* check for built in messages */
+		if (! superReceiver)
+			for (i = 0; i < 9; i++)
+				if (streq(tokenString, unStrs[i])) {
+					genInstruction(SendUnary, i);
+					sent = true;
+					}
+		if (! sent) {
+			genMessage(superReceiver, 0, messagesym);
+			}
+		/* once a message is sent to super, reciever is not super */
+		superReceiver = false;
+		ignore nextToken();
+		}
+	return(superReceiver);
+}
+
+static boolean binaryContinuation(superReceiver)
+boolean superReceiver;
+{	int i;
+	boolean sent, superTerm;
+	object messagesym;
+
+	superReceiver = unaryContinuation(superReceiver);
+	while (parseok && (token == binary)) {
+		messagesym = newSymbol(tokenString);
+		ignore nextToken();
+		superTerm = term();
+		ignore unaryContinuation(superTerm);
+		sent = false;
+		/* check for built in messages */
+		if (! superReceiver) {
+			for (i = 0; (! sent) && binStrs[i]; i++)
+				if (messagesym == binSyms[i]) {
+					genInstruction(SendBinary, i);
+					sent = true;
+					}
+
+			}
+		if (! sent) {
+			genMessage(superReceiver, 1, messagesym);
+			}
+		superReceiver = false;
+		}
+	return(superReceiver);
+}
+
+static int optimizeBlock(instruction, dopop)
+int instruction;
+boolean dopop;
+{	int location;
+	boolean saveOB;
+
+	genInstruction(DoSpecial, instruction);
+	location = codeTop;
+	genCode(0);
+	if (dopop)
+		genInstruction(DoSpecial, PopTop);
+	ignore nextToken();
+	if (! streq(tokenString, "["))
+		compilError("block needed","following optimized message");
+	ignore nextToken();
+	saveOB = optimizedBlock;
+	optimizedBlock = true;
+	body();
+	optimizedBlock = saveOB;
+	if (! streq(tokenString, "]"))
+		compilError("missing close","after block");
+	ignore nextToken();
+	codeArray[location] = codeTop;
+	return(location);
+}
+
+static boolean keyContinuation(superReceiver)
+boolean superReceiver;
+{	int i, j, argumentCount, savetop;
+	boolean sent, superTerm;
+	object messagesym;
+	char pattern[80];
+
+	savetop = codeTop;
+	superReceiver = binaryContinuation(superReceiver);
+	if (token == namecolon) {
+		if (streq(tokenString, "ifTrue:")) {
+			i = optimizeBlock(BranchIfFalse, false);
+			if (streq(tokenString, "ifFalse:")) {
+				codeArray[i] = codeTop + 3;
+				ignore optimizeBlock(Branch, true);
+				}
+			}
+		else if (streq(tokenString, "ifFalse:")) {
+			i = optimizeBlock(BranchIfTrue, false);
+			if (streq(tokenString, "ifTrue:")) {
+				codeArray[i] = codeTop + 3;
+				ignore optimizeBlock(Branch, true);
+				}
+			}
+		else if (streq(tokenString, "whileTrue:")) {
+			genInstruction(SendUnary, 3 /* value command */);
+			i = optimizeBlock(BranchIfFalse, false);
+			genInstruction(DoSpecial, PopTop);
+			genInstruction(DoSpecial, Branch);
+			for (j = codeTop - 1; j > 0; j--)
+				if ((codeArray[j] == savetop) &&
+				    (codeArray[j-1] == CreateBlock*16)) {
+					genCode(j-1);
+					break;
+					}
+			if (i == 0)
+				compilError("block needed before","whileTrue:");
+			codeArray[i] = codeTop;
+			}
+		else if (streq(tokenString, "and:"))
+			ignore optimizeBlock(AndBranch, false);
+		else if (streq(tokenString, "or:"))
+			ignore optimizeBlock(OrBranch, false);
+		else {
+			pattern[0] = '\0';
+			argumentCount = 0;
+			while (parseok && (token == namecolon)) {
+				ignore strcat(pattern, tokenString);
+				argumentCount++;
+				ignore nextToken();
+				superTerm = term();
+				ignore binaryContinuation(superTerm);
+				}
+			sent = false;
+
+			/* check for predefined messages */
+			messagesym = newSymbol(pattern);
+			if (! superReceiver) {
+				for (i = 0; (! sent) && binStrs[i]; i++)
+					if (messagesym == binSyms[i]) {
+						sent = true;
+						genInstruction(SendBinary, i);
+						}
+
+				for (i = 0; (! sent) && keyStrs[i]; i++)
+					if (messagesym == keySyms[i]) {
+						genInstruction(SendKeyword, i);
+						sent = true;
+						}
+				}
+
+			if (! sent) {
+				genMessage(superReceiver, argumentCount, messagesym);
+				}
+			}
+		superReceiver = false;
+		}
+	return(superReceiver);
+}
+
+static continuation(superReceiver)
+boolean superReceiver;
+{
+	superReceiver = keyContinuation(superReceiver);
+
+	while (parseok && (token == closing) && streq(tokenString, ";")) {
+		genInstruction(DoSpecial, Duplicate);
+		ignore nextToken();
+		ignore keyContinuation(superReceiver);
+		genInstruction(DoSpecial, PopTop);
+		}
+}
+
+static expression()
+{	boolean superTerm;
+
+	superTerm = term();
+	if (parseok)
+		continuation(superTerm);
+}
+
+static assignment(name)
+char *name;
+{	int i;
+	boolean done;
+
+	done = false;
+
+	/* it might be a temporary */
+	for (i = 1; (! done) && (i <= temporaryTop); i++)
+		if (streq(name, temporaryName[i])) {
+			genInstruction(PopTemporary, i-1);
+			done = true;
+			}
+
+	/* or it might be an instance variable */
+	for (i = 1; (! done) && (i <= instanceTop); i++)
+		if (streq(name, instanceName[i])) {
+			genInstruction(PopInstance, i-1);
+			done = true;
+			}
+
+	if (! done)
+		compilError("assignment to unknown name", name);
+}
+
+static statement()
+{	char assignname[80];
+	boolean superReceiver = false;
+
+	if ((token == binary) && streq(tokenString, "^")) {
+		ignore nextToken();
+		expression();
+		if (inBlock)
+			genInstruction(DoSpecial, BlockReturn);
+		else
+			genInstruction(DoSpecial, StackReturn);
+		}
+	else if (token == name) {	/* possible assignment */
+		ignore strcpy(assignname, tokenString);
+		ignore nextToken();
+		if ((token == binary) && streq(tokenString, "<-")) {
+			ignore nextToken();
+			expression();
+			if (inBlock || optimizedBlock)
+				if ((token == closing) && streq(tokenString,"]"))
+					genInstruction(DoSpecial, Duplicate);
+			assignment(assignname);
+			if (inBlock && (token == closing) &&
+				streq(tokenString, "]"))
+				genInstruction(DoSpecial, StackReturn);
+			}
+		else {		/* not an assignment after all */
+			superReceiver = nameTerm(assignname);
+			continuation(superReceiver);
+			if (! optimizedBlock)
+				if (inBlock && (token == closing) &&
+					streq(tokenString, "]"))
+					genInstruction(DoSpecial, StackReturn);
+				else
+					genInstruction(DoSpecial, PopTop);
+			}
+		}
+	else {
+		expression();
+		if (! optimizedBlock)
+			if (inBlock && (token == closing) &&
+				streq(tokenString, "]"))
+				genInstruction(DoSpecial, StackReturn);
+			else
+				genInstruction(DoSpecial, PopTop);
+		}
+}
+
+static body()
+{
+	do {
+		statement();
+		if ((token == closing) && streq(tokenString, "."))
+			ignore nextToken();
+		} while (parseok && (token != closing) && (token != inputend));
+}
+
+static block()
+{	int saveTemporary, argumentCount, fixLocation;
+	boolean saveInBlock, saveOB;
+	object tempsym;
+
+	saveTemporary = temporaryTop;
+	argumentCount = 0;
+	ignore nextToken();
+	if ((token == binary) && streq(tokenString, ":")) {
+		while (parseok && (token == binary) && streq(tokenString,":")) {
+			if (nextToken() != name)
+				compilError("name must follow colon",
+					"in block argument list");
+		        if (++temporaryTop > maxTemporary)
+				maxTemporary = temporaryTop;
+			argumentCount++;
+			if (temporaryTop > temporaryLimit)
+				compilError("too many temporaries in method","");
+			else {
+				tempsym = newSymbol(tokenString);
+				temporaryName[temporaryTop] = charPtr(tempsym);
+				}
+			ignore nextToken();
+			}
+		if ((token != binary) || ! streq(tokenString, "|"))
+			compilError("block argument list must be terminated",
+					"by |");
+		ignore nextToken();
+		}
+	genInstruction(CreateBlock, argumentCount);
+	if (argumentCount != 0){
+		genCode(saveTemporary + 1);
+		}
+	fixLocation = codeTop;
+	genCode(0);
+	saveInBlock = inBlock;
+	saveOB = optimizedBlock;
+	inBlock = true;
+	optimizedBlock = false;
+	body();
+	if ((token == closing) && streq(tokenString, "]"))
+		ignore nextToken();
+	else
+		compilError("block not terminated by ]","");
+	codeArray[fixLocation] = codeTop;
+	inBlock = saveInBlock;
+	optimizedBlock = saveOB;
+	temporaryTop = saveTemporary;
+}
+
+static temporaries()
+{	object tempsym;
+
+	temporaryTop = 0;
+	if ((token == binary) && streq(tokenString, "|")) {
+		ignore nextToken();
+		while (token == name) {
+			if (++temporaryTop > maxTemporary)
+				maxTemporary = temporaryTop;
+			if (temporaryTop > temporaryLimit)
+				compilError("too many temporaries in method","");
+			else {
+				tempsym = newSymbol(tokenString);
+				temporaryName[temporaryTop] = charPtr(tempsym);
+				}
+			ignore nextToken();
+			}
+		if ((token != binary) || ! streq(tokenString, "|"))
+			compilError("temporary list not terminated by bar","");
+		else
+			ignore nextToken();
+		}
+}
+
+static messagePattern()
+{	object argsym;
+
+	argumentTop = 0;
+	ignore strcpy(selector, tokenString);
+	if (token == name)		/* unary message pattern */
+		ignore nextToken();
+	else if (token == binary) {	/* binary message pattern */
+		ignore nextToken();
+		if (token != name) 
+			compilError("binary message pattern not followed by name",selector);
+		argsym = newSymbol(tokenString);
+		argumentName[++argumentTop] = charPtr(argsym);
+		ignore nextToken();
+		}
+	else if (token == namecolon) {	/* keyword message pattern */
+		selector[0] = '\0';
+		while (parseok && (token == namecolon)) {
+			ignore strcat(selector, tokenString);
+			ignore nextToken();
+			if (token != name)
+				compilError("keyword message pattern",
+					"not followed by a name");
+			if (++argumentTop > argumentLimit)
+				compilError("too many arguments in method","");
+			argsym = newSymbol(tokenString);
+			argumentName[argumentTop] = charPtr(argsym);
+			ignore nextToken();
+			}
+		}
+	else
+		compilError("illegal message selector", tokenString);
+}
+
+boolean parse(method, text)
+object method;
+char *text;
+{	int i;
+	object bytecodes, theLiterals;
+	byte *bp;
+
+	lexinit(text);
+	parseok = true;
+	codeTop = 0;
+	literalTop = temporaryTop = argumentTop =0;
+	maxTemporary = 0;
+	inBlock = optimizedBlock = false;
+
+	messagePattern();
+	if (parseok)
+		temporaries();
+	if (parseok)
+		body();
+	if (parseok)
+		genInstruction(DoSpecial, SelfReturn);
+
+	if (! parseok)
+		basicAtPut(method, bytecodesInMethod, nilobj);
+	else {
+		bytecodes = newByteArray(codeTop);
+		bp = bytePtr(bytecodes);
+		for (i = 0; i < codeTop; i++) {
+			bp[i] = codeArray[i];
+			}
+		basicAtPut(method, messageInMethod, newSymbol(selector));
+		basicAtPut(method, bytecodesInMethod, bytecodes);
+		if (literalTop > 0) {
+			theLiterals = newArray(literalTop);
+			for (i = 1; i <= literalTop; i++) {
+				basicAtPut(theLiterals, i, literalArray[i]);
+				}
+			basicAtPut(method, literalsInMethod, theLiterals);
+			}
+		else
+			basicAtPut(method, literalsInMethod, nilobj);
+		basicAtPut(method, stackSizeInMethod, newInteger(6));
+		basicAtPut(method, temporarySizeInMethod,
+			newInteger(1 + maxTemporary));
+		basicAtPut(method, textInMethod, newStString(text));
+		return(true);
+		}
+	return(false);
+}
+End
+echo unbundling primitive.c 1>&2
+cat >primitive.c <<'End'
+/*
+	Little Smalltalk, version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	Primitive processor
+
+	primitives are how actions are ultimately executed in the Smalltalk 
+	system.
+	unlike ST-80, Little Smalltalk primitives cannot fail (although
+	they can return nil, and methods can take this as an indication
+	of failure).  In this respect primitives in Little Smalltalk are
+	much more like traditional system calls.
+
+	Primitives are combined into groups of 10 according to 
+	argument count and type, and in some cases type checking is performed.
+*/
+
+# include <stdio.h>
+# include <math.h>
+# include "env.h"
+# include "memory.h"
+# include "names.h"
+# include "process.h"
+
+# define normalresult 1
+# define counterror 2
+# define typeerror  3
+# define quitinterp 4
+
+extern object doInterp();
+extern double modf();
+extern char *getenv();
+
+char tempfilename[100];		/* temp file for editing */
+
+static int zeroaryPrims(number)
+int number;
+{	char buffer[100];
+	short i;
+
+	returnedObject = nilobj;
+	switch(number) {
+		case 1:			/* read from user */
+			if (gets(buffer) != NULL)
+				returnedObject = newStString(buffer);
+			break;
+
+		case 2:
+			flushMessageCache();
+			break;
+
+		case 3:			/* return a random number */
+			/* this is hacked because of the representation */
+			/* of integers as shorts */
+			i = rand() >> 8;	/* strip off lower bits */
+			if (i < 0) i = - i;
+			returnedObject = newInteger(i>>1);
+			break;
+
+		default:		/* unknown primitive */
+			sysError("unknown primitive","zeroargPrims");
+			break;
+	}
+	return(normalresult);
+}
+
+static int unaryPrims(number, firstarg)
+int number;
+object firstarg;
+{
+
+	returnedObject = firstarg;
+	switch(number) {
+		case 1:		/* class of object */
+			returnedObject = getClass(firstarg);
+			break;
+
+		case 2:		/* basic size of object */
+			if (isInteger(firstarg))
+				returnedObject = newInteger(0);
+			else
+				returnedObject = newInteger(objectSize(firstarg));
+			break;
+
+		case 3:		/* hash value of object */
+			if (isInteger(firstarg))
+				returnedObject = firstarg;
+			else
+				returnedObject = newInteger((int) firstarg);
+			break;
+
+		case 9:		/* interpreter bytecodes */
+			returnedObject = doInterp(firstarg);
+			break;
+
+		default:		/* unknown primitive */
+			sysError("unknown primitive","unaryPrims");
+			break;
+	}
+	return(normalresult);
+}
+
+static int binaryPrims(number, firstarg, secondarg)
+int number;
+object firstarg, secondarg;
+{	char buffer[120];
+	char *bp;
+
+	returnedObject = firstarg;
+	switch(number) {
+		case 1:		/* object identity test */
+			if (firstarg == secondarg)
+				returnedObject = trueobj;
+			else
+				returnedObject = falseobj;
+			break;
+
+		case 2:		/* set class of object */
+			decr(classField(firstarg));
+			setClass(firstarg, secondarg);
+			returnedObject = firstarg;
+			break;
+
+		case 4:		/* string cat */
+			ignore strcpy(buffer, charPtr(firstarg));
+			ignore strcat(buffer, charPtr(secondarg));
+			returnedObject = newStString(buffer);
+			break;
+		
+		case 5:		/* basicAt: */
+			returnedObject = basicAt(firstarg, intValue(secondarg));
+			break;
+
+		case 6:		/* byteAt: */
+			bp = charPtr(firstarg);
+			returnedObject = newInteger(bp[intValue(secondarg)-1]);
+			break;
+
+		case 8:		/* execute a context */
+			messageToSend = firstarg;
+			argumentsOnStack = intValue(secondarg);
+			finalTask = ContextExecuteTask;
+			return(quitinterp);
+
+		default:		/* unknown primitive */
+			sysError("unknown primitive","binaryPrims");
+			break;
+
+	}
+	return(normalresult);
+}
+
+static int trinaryPrims(number, firstarg, secondarg, thirdarg)
+int number;
+object firstarg, secondarg, thirdarg;
+{	char *bp;
+
+	returnedObject = firstarg;
+	switch(number) {
+		case 1:			/* basicAt:Put: */
+			basicAtPut(firstarg, intValue(secondarg), thirdarg);
+			break;
+
+		case 2:			/* basicAt:Put: for bytes */
+			bp = charPtr(firstarg);
+			bp[intValue(secondarg)-1] = intValue(thirdarg);
+			break;
+
+		case 9:			/* compile method */
+			setInstanceVariables(firstarg);
+			if (parse(thirdarg, charPtr(secondarg)))
+				returnedObject = trueobj;
+			else
+				returnedObject = falseobj;
+			break;
+		
+		default:		/* unknown primitive */
+			sysError("unknown primitive","trinaryPrims");
+			break;
+		}
+	return(normalresult);
+}
+
+static int intUnary(number, firstarg)
+int number, firstarg;
+{	char buffer[20];
+
+	switch(number) {
+		case 1:		/* float equiv of integer */
+			returnedObject = newFloat((double) firstarg);
+			break;
+
+		case 5:		/* set random number */
+			srand(firstarg);
+			returnedObject = nilobj;
+			break;
+
+		case 6:		/* string equiv of number */
+			buffer[0] = firstarg;
+			buffer[1] = '\0';
+			returnedObject = newStString(buffer);
+			break;
+
+		case 7:
+			ignore sprintf(buffer,"%d",firstarg);
+			returnedObject = newStString(buffer);
+			break;
+
+		case 8:
+			returnedObject = allocObject(firstarg);
+			break;
+
+		case 9:
+			returnedObject = allocByte(firstarg);
+			break;
+
+		default:
+			sysError("intUnary primitive","not implemented yet");
+		}
+	return(normalresult);
+}
+
+int intBinary(number, firstarg, secondarg)
+register int firstarg, secondarg;
+int number;
+{	boolean binresult;
+
+	switch(number) {
+		case 0:
+			firstarg += secondarg; break;
+		case 1:
+			firstarg -= secondarg; break;
+		case 2:
+			binresult = firstarg < secondarg; break;
+		case 3:
+			binresult = firstarg > secondarg; break;
+		case 4:
+			binresult = firstarg <= secondarg; break;
+		case 5:
+			binresult = firstarg >= secondarg; break;
+		case 6:
+			binresult = firstarg == secondarg; break;
+		case 7:
+			binresult = firstarg != secondarg; break;
+		case 8:
+			firstarg *= secondarg; break;
+		case 9:
+			firstarg /= secondarg; break;
+		case 10:
+			firstarg %= secondarg; break;
+		case 11:
+			firstarg &= secondarg; break;
+		case 12:
+			firstarg ^= secondarg; break;
+		case 19:
+			if (secondarg < 0)
+				firstarg >>= (- secondarg);
+			else
+				firstarg <<= secondarg;
+			break;
+	}
+	if ((number >= 2) && (number <= 7))
+		if (binresult)
+			returnedObject = trueobj;
+		else
+			returnedObject = falseobj;
+	else
+		returnedObject = newInteger(firstarg);
+	return(normalresult);
+}
+
+static int strUnary(number, firstargument)
+int number;
+char *firstargument;
+{	FILE *fp;
+	char *p, buffer[1000];
+
+	switch(number) {
+		case 1:		/* length of string */
+			returnedObject = newInteger(strlen(firstargument));
+			break;
+
+		case 2:		/* copy of string */
+			returnedObject = newStString(firstargument);
+			break;
+
+		case 3:		/* string as symbol */
+			returnedObject = newSymbol(firstargument);
+			break;
+
+		case 6:		/* print, no newline */
+			fputs(firstargument, stdout);
+			ignore fflush(stdout);
+			returnedObject = nilobj;
+			break;
+
+		case 7:		/* make an object image */
+			returnedObject = falseobj;
+			fp = fopen(firstargument, "w");
+			if (fp == NULL) break;
+			imageWrite(fp);
+			ignore fclose(fp);
+			returnedObject = trueobj;
+			break;
+
+		case 8:		/* print a string */
+			puts(firstargument);
+			ignore fflush(stdout);
+			returnedObject = nilobj;
+			break;
+
+		case 9:		/* edit a string */
+			fp = fopen(tempfilename, "w");
+			fputs(firstargument, fp);
+			ignore fclose(fp);
+			p = getenv("EDITOR");
+			if (! p) p = "ed";
+			sprintf(buffer,"%s %s", p, tempfilename);
+			ignore system(buffer);
+			fp = fopen(tempfilename, "r");
+			for (p = buffer; (*p = getc(fp)) != EOF; p++);
+			*p = '\0';
+			ignore fclose(fp);
+			returnedObject = newStString(buffer);
+			sprintf(buffer,"rm %s", tempfilename);
+			ignore system(buffer);
+			break;
+
+		default:
+			sysError("unknown primitive", "strUnary");
+			break;
+		}
+
+	return(normalresult);
+}
+
+static int floatUnary(number, firstarg)
+int number;
+double firstarg;
+{	char buffer[20];
+	double temp;
+
+	switch(number) {
+		case 1:		/* asString */
+			ignore sprintf(buffer,"%g", firstarg);
+			returnedObject = newStString(buffer);
+			break;
+
+		case 2:		/* log */
+			returnedObject = newFloat(log(firstarg));
+			break;
+
+		case 3:		/* exp */
+			returnedObject = newFloat(exp(firstarg));
+			break;
+
+		case 4:		/* sqrt */
+			returnedObject = newFloat(sqrt(firstarg));
+			break;
+
+		case 5:		/* gamma */
+			returnedObject = newFloat(gamma(firstarg));
+			break;
+
+		case 6:		/* integer part */
+			modf(firstarg, &temp);
+			returnedObject = newInteger((int) temp);
+			break;
+
+		default:
+			sysError("unknown primitive","floatUnary");
+			break;
+		}
+
+	return(normalresult);
+}
+
+int floatBinary(number, first, second)
+int number;
+double first, second;
+{	 boolean binResult;
+
+	switch(number) {
+		case 0: first += second; break;
+
+		case 1:	first -= second; break;
+		case 2: binResult = (first < second); break;
+		case 3: binResult = (first > second); break;
+		case 4: binResult = (first <= second); break;
+		case 5: binResult = (first >= second); break;
+		case 6: binResult = (first == second); break;
+		case 7: binResult = (first != second); break;
+		case 8: first *= second; break;
+		case 9: first /= second; break;
+		default:	
+			sysError("unknown primitive", "floatBinary");
+			break;
+		}
+
+	if ((number >= 2) && (number <= 7))
+		if (binResult)
+			returnedObject = trueobj;
+		else
+			returnedObject = falseobj;
+	else
+		returnedObject = newFloat(first);
+	return(normalresult);
+}
+
+boolean primitive(primitiveNumber, arguments, size)
+int primitiveNumber, size;
+object *arguments;
+{	int primitiveGroup;
+	boolean done = false;
+	int response;
+
+	primitiveGroup = primitiveNumber / 10;
+	response = normalresult;
+	switch(primitiveGroup) {
+		case 0: case 1: case 2: case 3:
+			if (size != primitiveGroup)
+				response = counterror;
+			else {
+				switch(primitiveGroup) {
+					case 0:
+						response = zeroaryPrims(primitiveNumber);
+						break;
+					case 1:
+						response = unaryPrims(primitiveNumber - 10, arguments[0]);
+						break;
+					case 2:
+						response = binaryPrims(primitiveNumber-20, arguments[0], arguments[1]);
+						break;
+					case 3:
+						response = trinaryPrims(primitiveNumber-30, arguments[0], arguments[1], arguments[2]);
+						break;
+				}
+			}
+			break;
+
+
+		case 5:			/* integer unary operations */
+			if (size != 1)
+				response = counterror;
+			else if (! isInteger(arguments[0]))
+				response = typeerror;
+			else
+				response = intUnary(primitiveNumber-50,
+						intValue(arguments[0]));
+			break;
+
+		case 6: case 7:		/* integer binary operations */
+			if (size != 2)
+				response = counterror;
+			else if ((! isInteger(arguments[0])) || 
+				  ! isInteger(arguments[1]))
+				response = typeerror;
+			else
+				response = intBinary(primitiveNumber-60,
+					intValue(arguments[0]), 
+					intValue(arguments[1]));
+			break;
+
+		case 8:			/* string unary */
+			if (size != 1)
+				response = counterror;
+			else if (! isString(arguments[0]))
+				response = typeerror;
+			else
+				response = strUnary(primitiveNumber-80,
+					charPtr(arguments[0]));
+			break;
+
+		case 10:		/* float unary */
+			if (size != 1)
+				response = counterror;
+			else if (! isFloat(arguments[0]))
+				response = typeerror;
+			else
+				response = floatUnary(primitiveNumber-100,
+					floatValue(arguments[0]));
+			break;
+
+		case 11:		/* float binary */
+			if (size != 2)
+				response = counterror;
+			else if ((! isFloat(arguments[0])) ||
+				 (! isFloat(arguments[1])))
+				response = typeerror;
+			else
+				response = floatBinary(primitiveNumber-110,
+					floatValue(arguments[0]),
+					floatValue(arguments[1]));
+			break;
+
+	}
+
+	/* now check return code */
+	switch(response) {
+		case normalresult:
+			break;
+		case quitinterp:
+			done = true;
+			break;
+		case counterror:
+			sysError("count error","in primitive");
+			break;
+		case typeerror:
+fprintf(stderr,"primitive number %d\n", primitiveNumber);
+			sysError("type error","in primitive");
+			returnedObject = nilobj;
+			break;
+
+		default:
+			sysError("unknown return code","in primitive");
+			returnedObject = nilobj;
+			break;
+	}
+	return (done);
+}
+
+End
+echo unbundling interp.c 1>&2
+cat >interp.c <<'End'
+/*
+	Little Smalltalk version 2
+	Written by Tim Budd, Oregon State University, July 1987
+
+	bytecode interpreter module
+
+	execute bytecodes for a given method until one of six events occur
+	1. A message must be sent to another object
+	2. A message must be sent to super
+	3. A return from a method occurs
+	4. An explicit return from a block occurs (backs up the process chain)
+	5. A block must be created
+	6. A block must begin execution
+
+	the global variable finalTask indicates which of the six events is to
+	be performed.  Various other global variables (described in process.h)
+	give other information to be used in performing the called for task.
+
+	Note that the interpreter is called as part of the
+	main instruction sequence (single process) and (via a primitive call)
+	as part of the multi-process scheduler loop (class Scheduler, Process,
+	et al)
+*/
+
+# include <stdio.h>
+# include "env.h"
+# include "memory.h"
+# include "names.h"
+# include "process.h"
+# include "interp.h"
+
+extern object unSyms[], binSyms[], keySyms[];
+extern boolean primitive();
+
+# define nextByte byteToInt(bytecodes[byteCounter++])
+# define ipush(x) incr(stack[stacktop++] = x)
+/* note that ipop leaves a ref count on the popped object */
+# define ipop(x)  x=stack[--stacktop]; stack[stacktop]=nilobj
+
+execute(method, byteCounter, stack, stacktop, arguments, temporaries)
+object method, *stack, *arguments, *temporaries;
+register int byteCounter;
+register int stacktop;
+{
+	int i, low, high;
+	object receiver, *instance, *literals;
+	object newobj;
+	byte  *bytecodes;
+	boolean done;
+	double f;
+
+	/* do initialization */
+	receiver = arguments[0];
+	if (isInteger(receiver))
+		instance = (object *) 0;
+	else
+		instance = memoryPtr(receiver);
+	bytecodes = bytePtr(basicAt(method, bytecodesInMethod));
+	literals = memoryPtr(basicAt(method, literalsInMethod));
+	done = false;
+
+
+	while( ! done ) {
+		low = (high = nextByte) & 0x0F;
+		high >>= 4;
+		if (high == 0) {
+			high = low;
+			low = nextByte;
+			}
+/*fprintf(stderr,"executing %d %d\n", high, low);*/
+
+		switch(high) {
+			case PushInstance:
+				ipush(instance[low]);
+				break;
+
+			case PushArgument:
+				ipush(arguments[low]);
+				break;
+
+			case PushTemporary:
+				ipush(temporaries[low]);
+				break;
+
+			case PushLiteral:
+				ipush(literals[low]);
+				break;
+
+			case PushConstant:
+				if (low == 3)
+					low = -1;
+				if (low < 3) {
+					ipush(newInteger(low));
+					}
+				else
+					switch(low) {
+						case 4: 
+							ipush(nilobj);
+							break;
+
+						case 5:
+							ipush(trueobj);
+							break;
+
+						case 6:
+							ipush(falseobj);
+							break;
+
+						case 7:
+							ipush(smallobj);
+							break;
+
+						default:
+					sysError("not done yet","pushConstant");
+						}
+				break;
+
+			case PushGlobal:
+				newobj = nameTableLookup(globalNames, 
+					literals[low]);
+				if (newobj == nilobj) {
+					/* send message instead */
+					ipush(smallobj);
+					ipush(literals[low]);
+					argumentsOnStack = stacktop - 2;
+					messageToSend = 
+						newSymbol("cantFindGlobal:");
+					finalTask = sendMessageTask;
+					done = true;
+					}
+				else
+					ipush(newobj);
+				break;
+	
+			case PopInstance:
+				decr(instance[low]);
+				/* we transfer reference count to instance */
+				ipop(instance[low]);
+				break;
+
+			case PopTemporary:
+				decr(temporaries[low]);
+				/* we transfer reference count to temporaries */
+				ipop(temporaries[low]);
+				break;
+
+			case SendMessage:
+				argumentsOnStack = stacktop - (low + 1);
+				messageToSend = literals[nextByte];
+				finalTask = sendMessageTask;
+				done = true;
+				break;
+
+			case SendUnary:
+				/* we optimize a couple common messages */
+				if (low == 0) {		/* isNil */
+					ipop(newobj);
+					if (newobj == nilobj) {
+						ipush(trueobj);
+						}
+					else {
+						decr(newobj);
+						ipush(falseobj);
+						}
+					}
+				else if (low == 1) {	/* notNil */
+					ipop(newobj);
+					if (newobj == nilobj) {
+						ipush(falseobj);
+						}
+					else {
+						decr(newobj);
+						ipush(trueobj);
+						}
+					}
+				else {
+					argumentsOnStack = stacktop - 1;
+					messageToSend = unSyms[low];
+					finalTask = sendMessageTask;
+					done = true;
+					}
+				break;
+
+			case SendBinary:
+				/* optimize arithmetic as long as no */
+				/* conversions are necessary */
+				if (low <= 12) {
+					if (isInteger(stack[stacktop-1]) &&
+				    	    isInteger(stack[stacktop-2])) {
+						ipop(newobj);
+						i = intValue(newobj);
+						ipop(newobj);
+						ignore intBinary(low, intValue(newobj), i);
+						ipush(returnedObject);
+						break;
+						}
+					if (isFloat(stack[stacktop-1]) &&
+					    isFloat(stack[stacktop-2])) {
+						ipop(newobj);
+						f = floatValue(newobj);
+						decr(newobj);
+						ipop(newobj);
+						ignore floatBinary(low, floatValue(newobj), f);
+						decr(newobj);
+						ipush(returnedObject);
+						break;
+						}
+					}
+				argumentsOnStack = stacktop - 2;
+				messageToSend = binSyms[low];
+				finalTask = sendMessageTask;
+				done = true;
+				break;
+
+			case SendKeyword:
+				argumentsOnStack = stacktop - 3;
+				messageToSend = keySyms[low];
+				finalTask = sendMessageTask;
+				done = true;
+				break;
+
+			case DoPrimitive:
+				i = nextByte;
+				done = primitive(i, &stack[stacktop - low], low);
+				incr(returnedObject);
+				/* pop off arguments */
+				for (i = low; i > 0; i--) {
+					ipop(newobj);
+					decr(newobj);
+					}
+				if (! done) {
+					ipush(returnedObject);
+					decr(returnedObject);
+					}
+				break;
+
+			case CreateBlock:
+				/* we do most of the work in making the block */
+				/* leaving it to the caller to fill in */
+				/* the context information */
+				newobj = allocObject(blockSize);
+				setClass(newobj, blockclass);
+				basicAtPut(newobj, argumentCountInBlock, newInteger(low));
+				i = (low > 0) ? nextByte : 0;
+				basicAtPut(newobj, argumentLocationInBlock, 
+					newInteger(i));
+				basicAtPut(newobj, bytecountPositionInBlock,
+					newInteger(byteCounter + 1));
+				incr(returnedObject = newobj);
+				/* avoid a subtle side effect here */
+				i = nextByte;
+				byteCounter = i;
+				finalTask = BlockCreateTask;
+				done = true;
+				break;
+
+			case DoSpecial:
+				switch(low) {
+					case SelfReturn:
+						incr(returnedObject = receiver);
+						finalTask = ReturnTask;
+						done = true;
+						break;
+
+					case StackReturn:
+						ipop(returnedObject);
+						finalTask = ReturnTask;
+						done = true;
+						break;
+
+					case BlockReturn:
+						ipop(returnedObject);
+						finalTask = BlockReturnTask;
+						done = true;
+						break;
+
+					case Duplicate:
+						ipop(newobj);
+						ipush(newobj);
+						ipush(newobj);
+						decr(newobj);
+						break;
+
+					case PopTop:
+						ipop(newobj);
+						decr(newobj);
+						break;
+
+					case Branch:
+						/* avoid a subtle bug here */
+						i = nextByte;
+						byteCounter = i;
+						break;
+
+					case BranchIfTrue:
+						ipop(newobj);
+						i = nextByte;
+						if (newobj == trueobj) {
+							++stacktop;
+							byteCounter = i;
+							}
+						decr(newobj);
+						break;
+
+					case BranchIfFalse:
+						ipop(newobj);
+						i = nextByte;
+						if (newobj == falseobj) {
+							++stacktop;
+							byteCounter = i;
+							}
+						decr(newobj);
+						break;
+
+					case AndBranch:
+						ipop(newobj);
+						i = nextByte;
+						if (newobj == falseobj) {
+							ipush(newobj);
+							byteCounter = i;
+							}
+						decr(newobj);
+						break;
+
+					case OrBranch:
+						ipop(newobj);
+						i = nextByte;
+						if (newobj == trueobj) {
+							ipush(newobj);
+							byteCounter = i;
+							}
+						decr(newobj);
+						break;
+
+					case SendToSuper:
+						argumentsOnStack = stacktop -
+							(nextByte + 1);
+						messageToSend = 
+							literals[nextByte];
+						finalTask = sendSuperTask;
+						done = true;
+						break;
+
+					default:
+						sysError("invalid doSpecial","");
+						break;
+				}
+				break;
+
+			default:
+				sysError("invalid bytecode","");
+				break;
+		}
+	}
+
+	/* when done, save stack top and bytecode counter */
+	/* before we exit */
+
+	finalStackTop = stacktop;
+	finalByteCounter = byteCounter;
+}
+
+End

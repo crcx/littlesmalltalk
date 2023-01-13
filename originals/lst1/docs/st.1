@@ -1,0 +1,106 @@
+.TH st 1 "local"
+.SH NAME
+st \- a Little Smalltalk
+.SH SYNOPSIS
+st [options] [files]
+.SH DESCRIPTION
+.PP
+\fBst\fP is an interpreter for a Smalltalk-like language.  For a complete
+description of the language accepted by the interpreter see the user manual.
+Options accepted by the command are as follows:
+.IP \-a
+If the \-a option is given statistics on the number of memory allocations
+will be displayed following execution.
+.IP \-d\fIdigit\fP
+If the \fIdigit\fP is zero only those results explicitly requested by the
+user will be printed.  If 1, the values of expressions typed at the
+keyboard will be displayed (this is the default).  
+If 2, the values of expressions and the values
+assigned in assignment statements will be displayed.
+.IP \-f
+The \-f option indicates fast loading should be used, which loads a binary
+save image (see ``)s'' below) for the standard library.
+.IP \-g
+The next argument is taken to be the name of an additional library stored
+in the system library area.  The library is loaded following the standard
+prelude, just as if a ``)g'' directive were given at the beginning of
+execution (see below).
+.IP \-l
+The next argument is taken to be the name of a file containing a binary
+image saved using the )s directive (see below).  This binary image is 
+loaded prior to execution.
+.IP \-m
+Do not perform fast loading.  (Used when fastloading is the default).
+.IP \-n
+The \-n option, if given, suppresses the loading 
+of the standard library.  
+As this gives you a system with almost no functionality, it is seldom
+useful except during debugging.
+.IP \-r
+The next argument is taken to be the name of a file of
+Smalltalk commands.  The file is included prior to execution, just
+as if a ``)r'' directive were given at the beginning of execution (see below).
+.IP \-s
+In normal operation, at the end of execution the number of reference
+count increments and decrements is printed just prior to exit.
+In the absence of cycles these two
+figures should be equal.  Since cycles can cause large chunks of memory to
+become unreachable, and seriously degrade performance, this information is
+often useful in debugging.
+The \-s option, if given, suppresses the printing of this information.
+.PP
+The files, if given, must contain class descriptions.  Consult the
+reference manual for the syntax for class descriptions.  The classes
+defined are included along with the standard library of classes before
+execution begins.
+.PP
+Once execution begins, the cursor will tab over 8 spaces to indicate that
+a command can be entered.
+A command consists of a valid Smalltalk expression, without a terminating
+period.
+As each expression is entered it is executed by the Little Smalltalk
+interpreter, and the results displayed.
+.PP
+The following system directives can be entered in place of commands:
+.IP ")e filename"
+Edit the named file, which must contain only class descriptions.
+The Little Smalltalk system will suspend, leaving the user in an editor
+for making changes to the named file.  Upon exiting the editor, the named
+file will automatically be included, as with the )i directive (below).
+The editor chosen by this command is taken from the variable EDITOR in the
+user's environment.
+.IP ")g filename"
+Search for a file with the given name in the system library area.
+If found, load the library in with the users classes.  This is useful for
+creating libraries of commonly used classes which are not part of the
+standard prelude, such as classes for statistics applications or for
+graphics.
+.IP ")i filename"
+Include the named file.  The File must contain one or more class
+descriptions.  The class descriptions are parsed, and if syntactically
+legal new instances of class \fBClass\fP are added to the Smalltalk system.
+.IP ")l filename"
+Load a saved binary environment.  The file must have been previously
+created using the )s directive (below).  The values of all variables are
+overridden.
+.IP ")r filename"
+Read the named file.  The effect is just as if the lines in the file
+had been typed at the keyboard.  The file cannot contain class
+descriptions.
+.IP ")s filename"
+Save the current environment in the named file.  The values of all
+variables will be saved, and can later be restored using the )l directive
+(above).
+.IP ")!string"
+.br
+Execute the string following the exclamation point as
+a Unix command.
+.SH "Author"
+Tim Budd, Department of Computer Science, Oregon State University
+.SH "See Also"
+Timothy A. Budd,
+\fIA Little Smalltalk\fP, published by Addison Wesley.
+.SH Bugs
+Not all the Smalltalk-80 Language described in the Blue Book is supported;
+see the user manual for details.
+(Smalltalk-80 is a trademark of Xerox Corporation).

@@ -1,0 +1,52 @@
+objects are limited to size 256 
+	this mostly limits the text (char) size of methods - to 512 chars.
+	this could be fixed by changing memory.c.
+
+nested array literals don't seem to work properly
+
+radices other than 10 aren't implemented.
+
+parser should leave method text in method, so it can be edited dynamically
+(does this now, but it should be an option).
+
+The collection hierarchy has been completely reorginized (this isn't a bug)
+	many of the more obscure messages are left unimplmented.
+	many of the abstract classes are eliminated
+	Bags have been eliminated (they can be replaced by lists)
+	collections are now magnitudes (set subset relations)
+
+The basic classes are somewhat incomplete, in particular
+	points aren't implemented
+	radians are implemented (neither are trig functions)
+
+Bytearrays are a bit odd.  In particular,
+	converting to bytearrays gives something too big (by twice)
+	converting bytearrays to strings can cause bugs if the last
+	byte is not zero (causing non null terminated strings)
+
+Files aren't implemented; 
+	when they are addMethod and editMethod should be changed to use
+	Smalltalk files.
+
+Semaphores and processes aren't implemented yet - even in the multiprocess
+	version
+	initial experiments aren't encouraging - 
+	they seem to be too slow.
+	
+PROJECTS______________________________________________________________
+For those with time on their hands and nothing to do, here is a list
+of several projects that need doing.
+
+1. Profiling indicates that about 45% of execution time is spent in the
+routine ``execute'', in interp.c.  Rewrite this in your favorite assembly
+language to speed it up.
+
+2. Rewrite the memory manager.  Possible changes
+	a. use garbage collection of some sort
+	b. allow big objects (bigger than 256 words)
+
+3. Rewrite the process manager in assembly language, permitting the
+	Smalltalk process stack to exist intermixed with the C
+	execution stack.
+
+4. Port to your favorite machine, making the interface fit the machine.

@@ -1,0 +1,41 @@
+Little Smalltalk
+	88
+3.14159
+this is it
+#( #this #is #also #it )
+True
+shallowCopy
+respondsTo:
+printString
+print
+notNil
+next
+isNil
+isMemberOf:
+isKindOf:
+first
+error:
+do:
+deepCopy
+copy
+class
+asSymbol
+asString
+~=
+=
+~~
+==
+#( 22 17 )
+time:
+sh:
+perform:withArguments:
+noDisplay
+doPrimitive:withArguments:
+displayAssign
+display
+debug:
+date
+clearScreen
+Main
+	
+

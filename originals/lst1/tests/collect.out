@@ -1,0 +1,29 @@
+Little Smalltalk
+	example
+7
+#( $e $x $a $m $p $l $e )
+2
+Bag ( $x $l $m $p $a $e $e )
+Set ( $l $p $m $a $x $e )
+exampl
+Dictionary ( 1 @ $e 2 @ $x 3 @ $a 4 @ $m 5 @ $p 6 @ $l 7 @ $e )
+List ( $e $x $a $m $p $l $e )
+List ( 0.666667 $e $x $a $m $p $l $e 12.5 13.25 14 14.75 )
+14.75
+List ( 0.666667 $e $x $a $m $p $l $e 12.5 13.25 14 $a 7 )
+xmpl
+xampl
+aeelmpx
+xpmleea
+Set ( 7 6 5 4 3 2 1 )
+Bag ( $x $l $m $p $a $e $e )
+xxxmxlx
+Bag ( 1 2 3 4 5 6 )
+6
+Bag ( 1 3 5 )
+Set ( 2 1 0 )
+3
+read
+Main
+	
+

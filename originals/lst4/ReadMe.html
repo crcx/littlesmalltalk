@@ -1,0 +1,116 @@
+<html>
+<heading>
+<title>Little Smalltalk Version 4 Distribution</title>
+</heading>
+<body>
+<h1>Little Smalltalk, version 4.0
+<br>Timothy A. Budd, budd@cs.orst.edu
+<br>Oregon State University
+</h1>
+
+I first started developing Little Smalltalk back in 1984, and to tell the
+truth hadn't touched it for several years now.  However, when I attended
+OOPSLA in Portland a few months ago, several things struck me
+<ul>
+<li>Addison-Wesley was <i>still</i> selling my book ``A Little Smalltalk''
+(despite it being many years old now and very very dated), and people were
+still buying it (don't ask my why).
+<li>There was a heck of a lot of interest in Smalltalk on the vendor floor.
+<li>People kept asking me about Little Smalltalk.
+</ul>
+These things combined to make me think perhaps I should 
+revisit Little Smalltalk.  It my spare time since then I've been 
+updating the system, and this is the result.
+
+<h2>What Little Smalltalk is, and more importantly, what it isn't</h2>
+
+First and foremost, let me say at the beginning in as <b>LOUD</b> 
+a voice as I can that Little Smalltalk is <b>NOT</b> a 
+smalltalk-80 system.  If you want a <i>real</i>
+Smalltalk system go buy one from ParcPlace, Digitalk, IBM, or whomever.
+<p>
+Little Smalltalk is a sort of fun experiment in building a minimal 
+smalltalk system.  The source code for the interpreter is less than 1800
+lines of code.  The image consists of less than 4000 objects.  It runs
+in almost no memory.  In short, it's small, it's reasonably fast, it's easy 
+to understand, and easy to modify.
+<p>
+As you might expect, in order to get Smalltalk to run in something this
+small, I've had to make lots of changes.  Here are the most notable:
+
+<ul>
+<li>No graphics.
+<li>The user interface is a more conventional real-eval-print loop (like
+most Lisp systems), not a browser.  (But it <i>is</i> all written in
+Smalltalk itself, so you can modify it if you wish).
+<li>Primitives and cascades are handled as they were in earlier Little
+Smalltalk systems, which is not how they are handed in Smalltalk-80.
+<li>The standard class hierarchy differs considerably from Smalltalk-80.
+<ul>
+<li>My basic collections are <b>List</b>, <b>Tree</b>, 
+<b>Dictionary</b>, <b>Array</b> and <b>String</b>
+<li>The only numbers in the standard image are large and small integers
+(adding fractions and floats might be an interesting exercise, however).
+</ul>
+</ul>
+
+<h2>Obtaining the system</h2>
+
+Anyway, if after this you <i>still</i> want to play with the system, 
+here are the details.  You can ftp from 
+<a href="ftp://ftp.cs.orst.edu">ftp.cs.orst.edu</a>.  
+The file
+you are reading is found in 
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little">/users/b/budd/little</a>
+on that system, and the
+file names I'm going to mention in a moment are found in that directory.
+<p>
+Or, if you are using a www browser, you can set the option to copy
+sources to disk, and read the following files.
+<ul>
+<li><a href="ftp://ftp.cs.orst.edu/users/b/budd/little/distr.tar">distr.tar</a>
+contains the entire distribution as a tar file.  Alternatively, you can
+get it piece by piece.
+<li>The interpreter is contained in three files:
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/main.c">main.c</a> 
+(the main driver),
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/interp.c">interp.c</a> 
+(the bytecode interpreter),
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/memory.c">memory.c</a> 
+(the garbage collection system).
+<li>The standard image is found in the binary file named
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/LittleSmalltalkImage">
+LittleSmalltalkImage</a> 
+<li>Various test cases are found in a shar file named 
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/Tests">Tests</a>.
+</ul>
+
+To run the test cases use the fileIn: command (see ``documentation'' below).
+
+I've only compiled the system on a sys-v based Unix system -- but it uses
+nothing out of the ordinary so it may work on other systems.  Let me know
+what problems you run into.
+
+<h2>Documentation</h2>
+
+Documentation is, as usual, rather spare.  In my spare time when I'm not
+hacking the system I am revising the Little Smalltalk book, and a few
+sample chapters are available in postscript form in 
+<a href="ftp://ftp.cs.orst.edu/users/b/budd/little/book.ps">book.ps</a>.
+
+<h2>Last words</h2>
+
+Have fun.  Maybe this will be a real system some day. 
+But I didn't think I should hold up distribution until that point.
+
+<h2>Redistribution Rights and Standard Disclaimer</h2>
+
+Little Smalltalk can be freely and widely redistributed if not for
+profit and as long as the markings indicating origination are retained.
+<p>
+The system is not supported (it's only a hobby for me), and is, of course,
+not warrentied as suitable for any use whatsoever.
+
+</body>
+</html>
+

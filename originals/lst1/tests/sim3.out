@@ -1,0 +1,61 @@
+Little Smalltalk
+	event received at 3.46877
+group of size 7 arrives
+take chairs, schedule order
+event received at 5.81336
+group of size 7 arrives
+take chairs, schedule order
+event received at 6.46877
+group of size 7 orders 10 scoops
+event received at 6.81336
+group of size 7 orders 9 scoops
+event received at 8.81336
+group of size 7 leaves
+event received at 8.91228
+group of size 7 arrives
+take chairs, schedule order
+event received at 9.46877
+group of size 7 leaves
+event received at 10.9123
+group of size 7 orders 11 scoops
+event received at 10.9499
+group of size 7 arrives
+take chairs, schedule order
+event received at 11.1909
+group of size 7 arrives
+finds no chairs, leave
+event received at 11.9123
+group of size 7 leaves
+event received at 11.9204
+group of size 7 arrives
+take chairs, schedule order
+event received at 12.3266
+group of size 7 arrives
+finds no chairs, leave
+event received at 13.1723
+group of size 7 arrives
+finds no chairs, leave
+event received at 13.6961
+group of size 7 arrives
+finds no chairs, leave
+event received at 13.7641
+group of size 7 arrives
+finds no chairs, leave
+event received at 13.9204
+group of size 7 orders 7 scoops
+event received at 13.9499
+group of size 7 orders 9 scoops
+event received at 14.3689
+group of size 7 arrives
+finds no chairs, leave
+event received at 14.3911
+group of size 7 arrives
+finds no chairs, leave
+event received at 16.9499
+group of size 7 leaves
+event received at 17.9204
+group of size 7 leaves
+profits are 7.82
+Main
+	
+

@@ -1,0 +1,41 @@
+echo unbundling Little Smalltalk System
+if test ! -d parser
+then
+	echo making subdirectory /parser
+	mkdir parser
+	cd parser; sh ../parser.bundle
+	cd ..
+fi
+if test ! -d sources
+then
+	echo making subdirectory /sources
+	mkdir sources
+	cd sources; sh ../sources.bundle
+	cd ..
+fi
+if test ! -d prelude
+then
+	echo making subdirectory /prelude
+	mkdir prelude
+	cd prelude; sh ../prelude.bundle
+	cd ..
+fi
+if test ! -d tests
+then
+	echo making subdirectory /tests
+	mkdir tests
+	cd tests; sh ../tests.bundle
+	cd ..
+fi
+if test ! -d docs
+then
+	echo making subdirectory /docs
+	mkdir docs
+	cd docs; sh ../docs.bundle
+	cd ..
+fi
+if test ! -d bin
+then
+	echo making subdirectory /bin
+	mkdir bin
+fi

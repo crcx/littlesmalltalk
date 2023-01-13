@@ -1,0 +1,37 @@
+.\" macros for producing descriptions of classes
+.ds CM
+.de Nm
+.ds LH
+.bp
+.Im 0 \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
+.ds LH class \\fB\\$\\n(.$\\fP (continued)
+.in 0
+..
+.de Im
+.in \\$1
+.if 2=\\n(.$ .ft B
+\\$2
+.if 2<\\n(.$ .Im \\$1+2m \\$3 \\$4 \\$5 \\$6 \\$7 \\$8 \\$9
+..
+.de Rs  \" respondsTo:
+.ne 4v
+.IP \\fI\\$2\\fP\\h'2m-\\w'\\fI\\$2\\fI'u'\\$1 15m
+..
+.de Ex   \" Examples
+.br
+.ne 10v
+.SH 
+Examples
+.LP
+.if 0=\\n(.$ .ta 4i
+.el .ta \\$1
+ 	Printed result
+.sp
+.nf
+..
+.de Sx
+.SH
+\\$1
+.IP
+..
+

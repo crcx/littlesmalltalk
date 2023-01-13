@@ -1,0 +1,116 @@
+*
+*
+* Little Smalltalk, version 2
+* Written by Tim Budd, Oregon State University, July 1987
+*
+*  a few test cases.
+* invoke by messages to global variable ``test'', i.e.
+*		test queen
+*
+* all test cases can be run by sending the message all to test
+* 		test all
+*
+Declare Test Object
+Declare Queen Object row column neighbor
+Declare One Object
+Declare Two One
+Declare Three Two
+Declare Four Three
+Instance Test test
+Class Queen
+	setColumn: aNumber neighbor: aQueen
+		column <- aNumber.
+		neighbor <- aQueen
+|
+	first
+		(neighbor notNil)
+			ifTrue: [ neighbor first ].
+		row <- 1.
+		^ self testPosition
+|
+	next
+		(row = 8)
+			ifTrue: [ ((neighbor isNil) or: [neighbor next isNil])
+				ifTrue: [ ^ nil ].
+				row <- 0 ].
+		row <- row + 1.
+		^ self testPosition
+|
+	testPosition
+		(neighbor isNil) ifTrue: [ ^ self ].
+		(neighbor checkRow: row column: column)
+			ifTrue: [ ^ self next ]
+			ifFalse: [ ^ self ]
+|
+	checkRow: testRow column: testColumn | columnDifference |
+		columnDifference <- testColumn - column.
+		(((row = testRow) or: 
+			[ row + columnDifference = testRow]) or:
+			[ row - columnDifference = testRow])
+				ifTrue: [ ^ true ].
+		(neighbor notNil)
+			ifTrue: [ ^ neighbor checkRow: testRow 
+					column: testColumn ]
+			ifFalse: [ ^ false ]
+|
+	printBoard
+		(neighbor notNil)
+			ifTrue: [ neighbor printBoard ].
+		('column ', column , ' row ', row ) print.
+]
+Class One
+        test
+                ^ 1
+|
+	result1
+                ^ self test
+]
+Class Two
+        test
+                ^ 2
+]
+Class Three
+        result2
+                ^ self result1
+|
+	result3
+                ^ super test
+]
+Class Four
+        test
+                ^ 4
+]
+Class Test
+	all
+		self fork.
+		self queen.
+		self super.
+|
+	fork
+		(Block respondsTo: #fork)
+			ifTrue: [ [ (1 to: 10) do: [:x | x print] ] fork.
+				  [ (30 to: 40) do: [:y | y print] ] fork ]
+|
+	queen		| lastQueen |
+		lastQueen <- nil.
+		(1 to: 8) do: [:i | lastQueen <- Queen new;
+					setColumn: i neighbor: lastQueen ].
+		lastQueen first.
+		lastQueen printBoard
+|
+	super		 | x1 x2 x3 x4 |
+                x1 <- One new.
+                x2 <- Two new.
+                x3 <- Three new.
+                x4 <- Four new.
+                x1 test print.
+                x1 result1 print.
+                x2 test print.
+                x2 result1 print.
+                x3 test print.
+                x4 result1 print.
+                x3 result2 print.
+                x4 result2 print.
+                x3 result3 print.
+                x4 result3 print
+]
